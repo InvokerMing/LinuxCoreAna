@@ -50,7 +50,7 @@ struct sembuf {
 
 /* arg for semctl system calls. */
 /**
- * @brief 共用体 - semctl系统调用所用参数
+ * @brief 共用体 - 取得有关消息队列的一些信息，以及设置或者改变队列的存取权限和使用者
  */
 union semun {
 	int val;					/* 欲置的信号量值 - 用于 SETVAL */
@@ -108,8 +108,8 @@ struct sem_array {
 	time_t					sem_ctime;				/* 最后一次改动时间 */
 	struct sem				*sem_base;				/* 信号量数组 */
 	struct sem_queue		*sem_pending;			/* 待操作信号量队列 */
-	struct sem_queue		**sem_pending_last;		/* 最后一个待处理操作 */
-	struct sem_undo			*undo;					/* 欲撤销请求的数组 */
+	struct sem_queue		**sem_pending_last;		/* 待操作信号量队列尾部 */
+	struct sem_undo			*undo;					/* 撤销请求 */
 	unsigned long			sem_nsems;				/* 信号量集中的信号量数 */
 };
 

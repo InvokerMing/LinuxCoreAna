@@ -156,6 +156,7 @@ static int newary(key_t key, int nsems, int semflg)
 
 	return sem_buildid(id, sma->sem_perm.seq);
 }
+
 /**
  * @brief 创建信号量
  * @param key 信号量标识符
@@ -412,7 +413,10 @@ static int count_semzcnt (struct sem_array * sma, ushort semnum)
 	return semzcnt;
 }
 
-/* Free a semaphore set. */
+/**
+ * @brief 删除信号量
+ * @param id 信号量标识符
+ */
 static void freeary (int id)
 {
 	struct sem_array *sma;
@@ -544,7 +548,7 @@ int semctl_main(int semid, int semnum, int cmd, int version, union semun arg)
 	ushort fast_sem_io[SEMMSL_FAST];
 	ushort* sem_io = fast_sem_io;
 	int nsems;
-
+	// 锁信号量、异常检测
 	sma = sem_lock(semid);
 	if(sma==NULL)
 		return -EINVAL;
@@ -560,7 +564,7 @@ int semctl_main(int semid, int semnum, int cmd, int version, union semun arg)
 		goto out_unlock;
 
 	switch (cmd) {
-	case GETALL:
+	case GETALL: // 读取信号量集中的所有信号量的值
 	{
 		ushort *array = arg.array;
 		int i;
@@ -576,14 +580,14 @@ int semctl_main(int semid, int semnum, int cmd, int version, union semun arg)
 		}
 
 		for (i = 0; i < sma->sem_nsems; i++)
-			sem_io[i] = sma->sem_base[i].semval;
+			sem_io[i] = sma->sem_base[i].semval; // 读取信号量值
 		sem_unlock(semid);
 		err = 0;
-		if(copy_to_user(array, sem_io, nsems*sizeof(ushort)))
+		if(copy_to_user(array, sem_io, nsems*sizeof(ushort))) // 结果发送到用户空间
 			err = -EFAULT;
 		goto out_free;
 	}
-	case SETALL:
+	case SETALL: // 设置信号量集中的所有的信号量的值
 	{
 		int i;
 		struct sem_undo *un;
@@ -596,6 +600,7 @@ int semctl_main(int semid, int semnum, int cmd, int version, union semun arg)
 				return -ENOMEM;
 		}
 
+		// 从用户空间获取要设置的信号量值
 		if (copy_from_user (sem_io, arg.array, nsems*sizeof(ushort))) {
 			err = -EFAULT;
 			goto out_free;
@@ -612,17 +617,17 @@ int semctl_main(int semid, int semnum, int cmd, int version, union semun arg)
 			goto out_free;
 
 		for (i = 0; i < nsems; i++)
-			sma->sem_base[i].semval = sem_io[i];
+			sma->sem_base[i].semval = sem_io[i]; // 设置值
 		for (un = sma->undo; un; un = un->id_next)
 			for (i = 0; i < nsems; i++)
 				un->semadj[i] = 0;
 		sma->sem_ctime = CURRENT_TIME;
 		/* maybe some queued-up processes were waiting for this */
-		update_queue(sma);
+		update_queue(sma); // 更新队列
 		err = 0;
 		goto out_unlock;
 	}
-	case IPC_STAT:
+	case IPC_STAT: // 读取一个信号量集的数据结构semid_ds，并将其存储在semun中的buf参数中
 	{
 		struct semid64_ds tbuf;
 		memset(&tbuf,0,sizeof(tbuf));
@@ -641,22 +646,22 @@ int semctl_main(int semid, int semnum, int cmd, int version, union semun arg)
 	if(semnum < 0 || semnum >= nsems)
 		goto out_unlock;
 
-	curr = &sma->sem_base[semnum];
+	curr = &sma->sem_base[semnum]; // 找到指定信号量
 
 	switch (cmd) {
-	case GETVAL:
+	case GETVAL: // 返回信号量集中的一个单个的信号量的值
 		err = curr->semval;
 		goto out_unlock;
-	case GETPID:
+	case GETPID: // 返回最后一个执行semop操作的进程的PID
 		err = curr->sempid & 0xffff;
 		goto out_unlock;
-	case GETNCNT:
+	case GETNCNT: // 返回正在等待资源的进程数目
 		err = count_semncnt(sma,semnum);
 		goto out_unlock;
-	case GETZCNT:
+	case GETZCNT: // 返回这在等待完全空闲的资源的进程数目
 		err = count_semzcnt(sma,semnum);
 		goto out_unlock;
-	case SETVAL:
+	case SETVAL: // 设置信号量集中的一个单独的信号量的值
 	{
 		int val = arg.val;
 		struct sem_undo *un;
@@ -666,10 +671,10 @@ int semctl_main(int semid, int semnum, int cmd, int version, union semun arg)
 
 		for (un = sma->undo; un; un = un->id_next)
 			un->semadj[semnum] = 0;
-		curr->semval = val;
+		curr->semval = val; // 设置值
 		sma->sem_ctime = CURRENT_TIME;
 		/* maybe some queued-up processes were waiting for this */
-		update_queue(sma);
+		update_queue(sma); // 更新队列
 		err = 0;
 		goto out_unlock;
 	}
@@ -728,8 +733,9 @@ int semctl_down(int semid, int semnum, int cmd, int version, union semun arg)
 	int err;
 	struct sem_setbuf setbuf;
 	struct kern_ipc_perm *ipcp;
-
+	// 设置信号量集的数据结构semid_ds中的元素ipc_perm，其值取自semun中的buf参数
 	if(cmd == IPC_SET) {
+		// 从用户空间获取semid到buf
 		if(copy_semid_from_user (&setbuf, arg.buf, version))
 			return -EFAULT;
 	}
@@ -741,7 +747,7 @@ int semctl_down(int semid, int semnum, int cmd, int version, union semun arg)
 		err=-EIDRM;
 		goto out_unlock;
 	}	
-	ipcp = &sma->sem_perm;
+	ipcp = &sma->sem_perm; // ipc_perm
 	
 	if (current->euid != ipcp->cuid && 
 	    current->euid != ipcp->uid && !capable(CAP_SYS_ADMIN)) {
@@ -750,11 +756,12 @@ int semctl_down(int semid, int semnum, int cmd, int version, union semun arg)
 	}
 
 	switch(cmd){
-	case IPC_RMID:
+	case IPC_RMID: // 删除信号量
 		freeary(semid);
 		err = 0;
 		break;
 	case IPC_SET:
+		// 将获取到的buf值付给ipc_perm
 		ipcp->uid = setbuf.uid;
 		ipcp->gid = setbuf.gid;
 		ipcp->mode = (ipcp->mode & ~S_IRWXUGO)
@@ -775,6 +782,26 @@ out_unlock:
 	return err;
 }
 
+/**
+ * @brief 执行在信号量集上的控制操作
+ * @param semid 信号量标识符
+ * @param semnum 信号量数
+ * @param cmd 操作命令
+ *		IPC_STAT：读取一个信号量集的数据结构semid_ds，并将其存储在semun中的buf参数中。    ·
+ *		IPC_SET：设置信号量集的数据结构semid_ds中的元素ipc_perm，其值取自semun中的buf参数。    
+ *		IPC_RMID：将信号量集从内存中删除。    
+ *		GETALL：用于读取信号量集中的所有信号量的值。    
+ *		GETNCNT：返回正在等待资源的进程数目。    
+ *		GETPID：返回最后一个执行semop操作的进程的PID。   
+ *		GETVAL：返回信号量集中的一个单个的信号量的值。    
+ *		GETZCNT：返回这在等待完全空闲的资源的进程数目。
+ *		SETALL：设置信号量集中的所有的信号量的值。   
+ *		SETVAL：设置信号量集中的一个单独的信号量的值。
+ * @param arg 向内核中semun的指针
+ * 
+ * @return 成功返回相关数据
+ *         失败返回错误代码
+ */
 asmlinkage long sys_semctl (int semid, int semnum, int cmd, union semun arg)
 {
 	int err = -EINVAL;
@@ -799,12 +826,12 @@ asmlinkage long sys_semctl (int semid, int semnum, int cmd, union semun arg)
 	case IPC_STAT:
 	case SETVAL:
 	case SETALL:
-		err = semctl_main(semid,semnum,cmd,version,arg);
+		err = semctl_main(semid,semnum,cmd,version,arg); // 转移到子函数执行
 		return err;
 	case IPC_RMID:
 	case IPC_SET:
 		down(&sem_ids.sem);
-		err = semctl_down(semid,semnum,cmd,version,arg);
+		err = semctl_down(semid,semnum,cmd,version,arg); // 转移到子函数执行
 		up(&sem_ids.sem);
 		return err;
 	default:
@@ -812,6 +839,7 @@ asmlinkage long sys_semctl (int semid, int semnum, int cmd, union semun arg)
 	}
 }
 
+// 释放undo
 static struct sem_undo* freeundos(struct sem_array *sma, struct sem_undo* un)
 {
 	struct sem_undo* u;
@@ -829,7 +857,7 @@ static struct sem_undo* freeundos(struct sem_array *sma, struct sem_undo* un)
 	return un->proc_next;
 }
 
-/* returns without sem_lock on error! */
+// 为undo分配空间
 static int alloc_undo(struct sem_array *sma, struct sem_undo** unp, int semid, int alter)
 {
 	int size, nsems, error;
@@ -1026,6 +1054,14 @@ out_free:
  * The original implementation attempted to do this (queue and wait).
  * The current implementation does not do so. The POSIX standard
  * and SVID should be consulted to determine what behavior is mandated.
+ */
+/* 向信号量添加semadj值，释放undo结构。
+ * 销毁信号量数组时，不会释放undo结构，因此其中一些可能已过时。
+ * 实施注意：对于是否应该以原子方式进行一组调整，存在一些困惑。
+ * 也就是说，如果我们尝试减少时间间隔，我们应该排队等待直到我们可以合法地这样做吗？
+ * 原始实现尝试执行此操作（排队并等待）。
+ * 当前的实现不这样做。
+ * 应该咨询POSIX标准和SVID，以确定强制执行哪种行为。
  */
 void sem_exit (void)
 {

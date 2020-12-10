@@ -12,13 +12,14 @@ void sem_init (void);
 void msg_init (void);
 void shm_init (void);
 
+// ipcID数组
 struct ipc_ids {
-	int size;
-	int in_use;
-	int max_id;
-	unsigned short seq;
-	unsigned short seq_max;
-	struct semaphore sem;	
+	int size; // 大小
+	int in_use; // 说明已分配的资源个数
+	int max_id; // 在使用的最大的位置索引
+	unsigned short seq; // 下一个分配的位置序列号
+	unsigned short seq_max; // 最大位置使用序列
+	struct semaphore sem; // 保护 ipc_ids的信号量
 	spinlock_t ary;
 	struct ipc_id* entries;
 };
