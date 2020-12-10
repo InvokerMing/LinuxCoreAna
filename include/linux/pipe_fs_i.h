@@ -1,14 +1,14 @@
-struct pipe_inode_info {
-	wait_queue_head_t wait;//¹ÜµÀµÈ´ı¶ÓÁĞ
+ï»¿struct pipe_inode_info {
+	wait_queue_head_t wait;//ç®¡é“ç­‰å¾…é˜Ÿåˆ—
 	char* base;
 	unsigned int len;
-	unsigned int start;//µ±Ç°¹ÜµÀ»º´æÇø¶ÁµÄÎ»ÖÃ
-	unsigned int readers;//¶Á½ø³ÌµÄ±êÖ¾£¬»ò±àºÅ
-	unsigned int writers;//Ğ´½ø³ÌµÄ±êÖ¾£¬»ò±àºÅ
-	unsigned int waiting_readers;//ÔÚµÈ´ı¶ÓÁĞÖĞË¯ÃßµÄĞ´½ø³ÌµÄ¸öÊı
+	unsigned int start;//å½“å‰ç®¡é“ç¼“å­˜åŒºè¯»çš„ä½ç½®
+	unsigned int readers;//è¯»è¿›ç¨‹çš„æ ‡å¿—ï¼Œæˆ–ç¼–å·
+	unsigned int writers;//å†™è¿›ç¨‹çš„æ ‡å¿—ï¼Œæˆ–ç¼–å·
+	unsigned int waiting_readers;//åœ¨ç­‰å¾…é˜Ÿåˆ—ä¸­ç¡çœ çš„å†™è¿›ç¨‹çš„ä¸ªæ•°
 	unsigned int waiting_writers;
-	unsigned int r_counter;//ÓëreadersÀàËÆ£¬µ«µ±µÈ´ıĞ´ÈëFIFOµÄ½ø³ÌÊÇÊ¹ÓÃ
-	unsigned int w_counter;//ÓëwritersÀàËÆ£¬µ«µ±µÈ´ıĞ´ÈëFIFOµÄ½ø³ÌÊ±Ê¹ÓÃ
+	unsigned int r_counter;//ä¸readersç±»ä¼¼ï¼Œä½†å½“ç­‰å¾…å†™å…¥FIFOçš„è¿›ç¨‹æ˜¯ä½¿ç”¨
+	unsigned int w_counter;//ä¸writersç±»ä¼¼ï¼Œä½†å½“ç­‰å¾…å†™å…¥FIFOçš„è¿›ç¨‹æ—¶ä½¿ç”¨
 };
 
 /* Differs from PIPE_BUF in that PIPE_SIZE is the length of the actual

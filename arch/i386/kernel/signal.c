@@ -1,4 +1,4 @@
-/*
+﻿/*
  *  linux/arch/i386/kernel/signal.c
  *
  *  Copyright (C) 1991, 1992  Linus Torvalds
@@ -247,9 +247,9 @@ badframe:
 }
 
 /*
- *��ֹ�źŴ�������
- *@brief�˺���ִ��һϵ�в��������ѱ��жϵĵ�ǰ���̵�Ӳ�������Ŀ������ں�̬��ջ����ɾ����
- *setup_frame����������֡���Իָ��û�̬��ջԭ������ò��������������ʱ�����жϵĵ�ǰ���ָ̻�ִ�С�
+ *终止信号处理程序
+ *@brief此函数执行一系列操作，最后把被中断的当前进程的硬件上下文拷贝到内核态堆栈，并删除由
+ *setup_frame（）建立的帧，以恢复用户态堆栈原来的面貌。当本函数返回时，被中断的当前进程恢复执行。
  */
 asmlinkage int sys_sigreturn(unsigned long __unused)
 {
@@ -541,14 +541,14 @@ give_sigsegv:
  * OK, we're invoking a handler
  */
  /*
-  *@brief����һ���źţ�����������źŵĴ�������
+  *@brief捕获一个信号，并激活这个信号的处理程序。
   */
 static void
 handle_signal(unsigned long sig, struct k_sigaction* ka,
 	siginfo_t* info, sigset_t* oldset, struct pt_regs* regs)
 {
 	/* Are we from a system call? */
-	//����orig_eax���еķǸ������Ծ������źŴ�������������Ƿ�����ִ��δ��ɵ�ϵͳ����
+	//分析orig_eax域中的非负数，以决定在信号处理程序结束后是否重新执行未完成的系统调用
 	if (regs->orig_eax >= 0) {
 		/* If so, check system call restarting.. */
 		switch (regs->eax) {
@@ -569,23 +569,23 @@ handle_signal(unsigned long sig, struct k_sigaction* ka,
 	}
 
 	/* Set up the stack frame */
-	/*�����ǰ������siginfo_t�����͵���setup_rt_frame(��������͵���setup_frame(�������������������������û���ջ��
-	�������������һ��������ջ֡�����ݽṹ�������ջ֡�ﺬ���źŴ����������صĵ�ַ�����е�ǰ�û����̵ı��жϵ�Ӳ�������ģ�
-	����û�̬���̵ĸ���Ĵ��������ݣ��Լ���������ʵʱ�źŵ�λ����ͷ���sigreturn����ϵͳ���õĿ�ִ�д��룬���źŴ�������
-	����ʱִ����δ��롣��δ����ָ������û���ջ�������setup_frame��������ִ��ʱҲ������źŴ�������ĵ�ַ����
-	�����û��Ĵ������ݵ��ں˶�ջ����EIP�򣬵��������л����û�̬ʱ��������ʼִ���źŴ�������*/
+	/*如果当前进程有siginfo_t表，就调用setup_rt_frame(），否则就调用setup_frame(）函数；这两个函数都是在用户堆栈的
+	顶部创建并填充一个叫做堆栈帧的数据结构。这个堆栈帧里含有信号处理函数返回的地址；还有当前用户进程的被中断的硬件上下文；
+	存放用户态进程的浮点寄存器的内容，以及被阻塞的实时信号的位数组和发出sigreturn（）系统调用的可执行代码，当信号处理程序
+	结束时执行这段代码。这段代码的指针放在用户堆栈的最顶部。setup_frame（）函数执行时也把这个信号处理程序的地址放入
+	保存用户寄存器内容的内核堆栈区的EIP域，当进程又切换到用户态时，立即开始执行信号处理程序。*/
 	if (ka->sa.sa_flags & SA_SIGINFO)
 		setup_rt_frame(sig, ka, info, oldset, regs);
 	else
-		setup_frame(sig, ka, oldset, regs);/*����setup_frame(������ǰ��������do_signal()����ʱ��EIP��ָ���źŴ�������ĵ�һ��ָ�
-											 ESPҲָ���Լ�����Ϣ��ջ��������ʱ�źŴ�������ʼִ��*/
+		setup_frame(sig, ka, oldset, regs);/*由于setup_frame(）的提前操作，在do_signal()返回时，EIP已指向信号处理程序的第一条指令，
+											 ESP也指向自己的信息堆栈顶部，此时信号处理程序开始执行*/
 
-											 /*���������SA_ONESHOT��־��˵�������źŴ�������ֻ��������һ�Σ������Ҫ������������Ĭ�ϲ�����
-											   �Ա�ͬһ���͵��ź��ٴγ���ʱ����ִ�������������*/
+											 /*如果设置了SA_ONESHOT标志，说明它的信号处理程序只允许运行一次，因此需要重新设置它的默认操作，
+											   以便同一类型的信号再次出现时不再执行这个处理程序。*/
 	if (ka->sa.sa_flags & SA_ONESHOT)
 		ka->sa.sa_handler = SIG_DFL;
-	/*���û������SA_NODEFER��־������źű����ڸ��źŴ�������ִ���ڼ�����������handle_signal()���ص�do_signal()��
-	֮��do_signal()Ҳ�������ء���ʼִ���źŴ�������*/
+	/*如果没有设置SA_NODEFER标志，这个信号必须在该信号处理程序执行期间阻塞。到此handle_signal()返回到do_signal()。
+	之后，do_signal()也立即返回。开始执行信号处理程序。*/
 	if (!(ka->sa.sa_flags & SA_NODEFER)) {
 		spin_lock_irq(&current->sigmask_lock);
 		sigorsets(&current->blocked, &current->blocked, &ka->sa.sa_mask);
@@ -602,9 +602,9 @@ handle_signal(unsigned long sig, struct k_sigaction* ka,
  */
 
  /*
-  *@brief�ں˽����źŵĺ�����
-  *@param segs ջ���ĵ�ַ����ǰ�����û�״̬�¼Ĵ��������ݱ����ڸ�ջ�С�
-  *@param oldset ָ��sigset_t������һ��ָ��
+  *@brief内核接收信号的函数。
+  *@param segs 栈区的地址，当前进程用户状态下寄存器的内容保存在该栈中。
+  *@param oldset 指向sigset_t变量的一个指针
   */
 int do_signal(struct pt_regs* regs, sigset_t* oldset)
 {
@@ -617,29 +617,29 @@ int do_signal(struct pt_regs* regs, sigset_t* oldset)
 	 * kernel mode. Just return without doing anything
 	 * if so.
 	 */
-	 //������û�̬�����еĽ����Ƿ������жϣ�����û�з�������ʲô��������ֻ�Ǽ򵥷��ء�
+	 //检查在用户态下运行的进程是否发生了中断，，若没有发生过就什么都不做，只是简单返回。
 	if ((regs->xcs & 3) != 3)
 		return 1;
-	//������ݵĲ���oldsetλNULL������current->blocked��ĵ�ַ�������и�ֵ��
+	//如果传递的参数oldset位NULL，则用current->blocked域的地址对他进行赋值。
 	if (!oldset)
 		oldset = &current->blocked;
 
-	/*do_signal�������������������forѭ�����˳�ѭ���������ǣ����е�
-	  �����������źŶ�������ϣ��������Ѵ�����һ���ź�*/
+	/*do_signal这个函数的主题就是这个for循环，退出循环的条件是：所有的
+	  非阻塞挂起信号都处理完毕，或至少已处理完一个信号*/
 	for (;;) {
 		unsigned long signr;
 
 		spin_lock_irq(&current->sigmask_lock);
-		signr = dequeue_signal(&current->blocked, &info);/*����dequeue_signal�����������Ҫ�����ķ����������źŵı�ţ�
-														 ���ѱ��ֵ����ھֲ�����signr�У����ֵΪ0��˵�������ź���ȫ����������
-														 do_signal���Խ��������Ϊ��0ֵ�����صľ������ڵȴ������Ĺ����źŵı��*/
+		signr = dequeue_signal(&current->blocked, &info);/*调用dequeue_signal（）函数获得要处理的非阻塞挂起信号的编号，
+														 并把编号值存放在局部变量signr中，如果值为0，说明所有信号已全部被处理，
+														 do_signal可以结束，如果为非0值，返回的就是正在等待处理的挂起信号的编号*/
 		spin_unlock_irq(&current->sigmask_lock);
 
 		if (!signr)
 			break;
-		/*������ս�������ptraceϵͳ���������ӣ���������ź�Ҳ����SIGKILL��do_signal��ֹͣ������̵����У�
-		  ������notify_parent���������Ƚ��̷���SIGCHLD�źţ����ŵ��õ�������schedule()�������Ƚ���һ�����еĻ��ᣬ
-		  ʹ���Ƚ�����ʶ���źŵĴ�����*/
+		/*如果接收进程正被ptrace系统进程所监视，并且这个信号也不是SIGKILL，do_signal就停止子孙进程的运行，
+		  并调用notify_parent（）向祖先进程发送SIGCHLD信号，接着调用调度例程schedule()，给祖先进程一个运行的机会，
+		  使祖先进程意识到信号的处理。*/
 		if ((current->ptrace & PT_PTRACED) && signr != SIGKILL) {
 			/* Let the debugger run.  */
 			current->exit_code = signr;
@@ -657,7 +657,7 @@ int do_signal(struct pt_regs* regs, sigset_t* oldset)
 				continue;
 
 			/* Update the siginfo structure.  Is this good?  */
-			//������Ƚ����޸�������Ҫ�������źű�ţ�����do_signal�����µ���Ϣ���info�����ݽṹ
+			//如果祖先进程修改了曾经要处理的信号编号，现在do_signal根据新的信息填充info的数据结构
 			if (signr != info.si_signo) {
 				info.si_signo = signr;
 				info.si_errno = 0;
@@ -667,8 +667,8 @@ int do_signal(struct pt_regs* regs, sigset_t* oldset)
 			}
 
 			/* If the (new) signal is now blocked, requeue it.  */
-			/*����sigismember����������µ��ź��Ƿ����Ρ����ǣ��͵���send_sig_info�������·��ͻ��Ŷӡ�
-			  ���򣬿������̼���ִ������Ĵ��롣*/
+			/*调用sigismember（），检测新的信号是否被屏蔽。若是，就调用send_sig_info（）重新发送或排队。
+			  否则，控制流程继续执行下面的代码。*/
 			if (sigismember(&current->blocked, signr)) {
 				send_sig_info(signr, &info, current);
 				continue;
@@ -684,8 +684,8 @@ int do_signal(struct pt_regs* regs, sigset_t* oldset)
 				/* nothing */;
 			continue;
 		}
-		/*����������һ���źţ���struct k_sigaction *ka�ṹ�л�ȡ������������źŵ���Ϣ��
-		  ����������ka���������ݣ�����ִ�������źŴ����Ĳ����������źţ�ִ��һ��Ĭ�ϲ�����ִ��һ��ָ�����źŴ�������*/
+		/*本函数处理一个信号，从struct k_sigaction *ka结构中获取怎样处理这个信号的信息。
+		  本函数根据ka变量的内容，可以执行三种信号处理的操作：忽略信号，执行一个默认操作，执行一个指定的信号处理程序。*/
 		if (ka->sa.sa_handler == SIG_DFL) {
 			int exit_code = signr;
 
@@ -694,14 +694,14 @@ int do_signal(struct pt_regs* regs, sigset_t* oldset)
 				continue;
 
 			switch (signr) {
-				//Ĭ�ϲ�����ignore���ź����£�������Щ�źŵ�Ĭ�ϲ���ʱ��������ֻ�Ǽ���ִ��ѭ����
+				//默认操作是ignore的信号如下，对于这些信号的默认操作时不处理，只是继续执行循环。
 			case SIGCONT: case SIGCHLD: case SIGWINCH:
 				continue;
-				/*Ĭ�ϲ���ʱstop���ź����£�������Щ�źŵ�Ĭ�ϲ�����һ�Ǻ��ԣ�����ֹͣ�������С�������ս��������Ľ�����û����TTY�����ϣ�
-				��ô����POSIX��׼�涨����Щ�����ն˵��źŵ�Ĭ�ϲ����ǽ�����ԡ����Ժ������������is_orphaned_pgrp()��⵱ǰ�����Ƿ����ն�������
-				��û�������ϣ��ͺ����źţ�����ִ��ѭ�����������ϣ���������̼���ִ������Ĵ��롣�����ź�SIGSTOP��Ĭ�ϲ�������ֹͣ�������С�����
-				���������źŵ���������Ĭ�ϲ�������ֹͣ���У�Ȼ�����notify_parent�ж��ӽ��̱���ֹ���Ƿ�Ҫ֪ͨ�����Ƚ��̣����ŵ���schedule()���ȣ�
-				��schedule�������·���ʱ����ѭ������ִ�У������������������źš�*/
+				/*默认操作时stop的信号如下，对于这些信号的默认操作：一是忽略，二是停止进程运行。如果接收进程所属的进程组没有与TTY连接上，
+				那么按照POSIX标准规定，这些基于终端的信号的默认操作是将其忽略。所以函数在这里调用is_orphaned_pgrp()检测当前进程是否与终端相连。
+				若没有连接上，就忽略信号，继续执行循环；若连接上，则控制流程继续执行下面的代码。而对信号SIGSTOP的默认操作就是停止进程运行。所以
+				上面三个信号到达这里后的默认操作就是停止运行，然后调用notify_parent判断子进程被终止后是否要通知其祖先进程，接着调用schedule()调度，
+				当schedule（）重新返回时，则循环继续执行，处理队列中其他的信号。*/
 			case SIGTSTP: case SIGTTIN: case SIGTTOU:
 				if (is_orphaned_pgrp(current->pgrp))
 					continue;
@@ -716,9 +716,9 @@ int do_signal(struct pt_regs* regs, sigset_t* oldset)
 				schedule();
 				continue;
 			}
-						/*Ĭ�ϲ�����dump���ź�Ϊ����6����������Щ�źŵ�Ĭ�ϲ������ڵ�ǰ���̵�Ŀ¼�µ���core_dunp��������һ��core�ļ������ڡ���Ϣת������
-						  Ȼ�����ñ�־ָ���������˳�֮ǰ������core�ļ������ſ�������ִ�е�default��䣬�˳�ѭ������Ϣת���ǰ�������̵�ַ�ռ������
-						  �ͼĴ���������һ�𱣴������core�ļ��У����Ժ�debugger�ȵ��Թ���������ʹ��*/
+						/*默认操作是dump的信号为下面6个，对于这些信号的默认操作是在当前进程的目录下调用core_dunp（）生成一个core文件，用于“信息转储”；
+						  然后设置标志指明进程在退出之前已生成core文件。接着控制流程执行到default语句，退出循环。信息转储是把这个进程地址空间的内容
+						  和寄存器的内容一起保存在这个core文件中，供以后debugger等调试工具来分析使用*/
 			case SIGQUIT: case SIGILL: case SIGTRAP:
 			case SIGABRT: case SIGFPE: case SIGSEGV:
 			case SIGBUS: case SIGSYS: case SIGXCPU: case SIGXFSZ:
@@ -730,7 +730,7 @@ int do_signal(struct pt_regs* regs, sigset_t* oldset)
 				sigaddset(&current->pending.signal, signr);
 				recalc_sigpending(current);
 				current->flags |= PF_SIGNALED;
-				do_exit(exit_code);//��ֹ��ǰ���̵����У�����do_exit(���������ء�
+				do_exit(exit_code);//终止当前进程的运行，而且do_exit(）永不返回。
 				/* NOTREACHED */
 			}
 		}
@@ -747,12 +747,12 @@ int do_signal(struct pt_regs* regs, sigset_t* oldset)
 		return 1;
 	}
 
-	//���жϵ�ϵͳ���û������ִ��
-	/*do_signal()������ִ��forѭ��ʱ�����û��ȡ��Ҫ�������źţ���ִ��break����˳�ѭ����
-	Ȼ�������orig_eax���е�ֵ�������ֵʱ��������˵��������ϵͳ��������ִ�й����б��жϣ�
-	do_signal()����������ϵͳ���ñ��жϵ�ԭ��ERESTARTNOHAND��ERESTARTSYS��ERESTARTNOINTR����
-	��ȷ���Ƿ���Ҫ����ִ�б��жϵ�ϵͳ���á������Ҫ����ִ�и�ϵͳ���ã�do_signal()����
-	�����Ĵ������ݣ�ʹEIPָ��int 0x80ָ�EAX���ϵͳ���úţ��Ӷ�ʹ��ϵͳ�������»��ִ�С�*/
+	//被中断的系统调用获得重新执行
+	/*do_signal()函数在执行for循环时，如果没有取出要处理的信号，将执行break语句退出循环。
+	然后它检查orig_eax域中的值，如果该值时正整数，说明曾经有系统调用在其执行过程中被中断，
+	do_signal()函数将检查该系统调用被中断的原因（ERESTARTNOHAND，ERESTARTSYS，ERESTARTNOINTR），
+	以确定是否需要重新执行被中断的系统调用。如果需要重新执行该系统调用，do_signal()重新
+	调整寄存器内容，使EIP指向int 0x80指令，EAX存放系统调用号，从而使该系统调用重新获得执行。*/
 	/* Did we come from a system call? */
 	if (regs->orig_eax >= 0) {
 		/* Restart the system call - no handlers present */
@@ -763,6 +763,6 @@ int do_signal(struct pt_regs* regs, sigset_t* oldset)
 			regs->eip -= 2;
 		}
 	}
-	//����0ʱ����ʾ��û�д����κ��źš�
+	//返回0时，表示它没有处理任何信号。
 	return 0;
 }
