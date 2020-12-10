@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * linux/ipc/util.c
  * Copyright (C) 1992 Krishna Balasubramanian
  *
@@ -147,26 +147,26 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
 {
 	int id;
 
-	size = grow_ary(ids,size); // ¶Ô¶¯Ì¬Êı×é½øĞĞµ÷Õû
-	for (id = 0; id < size; id++) { // ²éÕÒ¿ÕµÄÊı×éÏî
+	size = grow_ary(ids,size); // å¯¹åŠ¨æ€æ•°ç»„è¿›è¡Œè°ƒæ•´
+	for (id = 0; id < size; id++) { // æŸ¥æ‰¾ç©ºçš„æ•°ç»„é¡¹
 		if(ids->entries[id].p == NULL)
 			goto found;
 	}
 	return -1;
 found:
-	ids->in_use++; // Ê¹ÓÃ×ÊÔ´Êı¼Ó1
+	ids->in_use++; // ä½¿ç”¨èµ„æºæ•°åŠ 1
 	if (id > ids->max_id)
 		ids->max_id = id;
 
 	new->cuid = new->uid = current->euid;
 	new->gid = new->cgid = current->egid;
 
-	new->seq = ids->seq++; // Ã¿·ÖÅä¸ö×ÊÔ´£¬Î»ÖÃĞòÁĞºÅ¼Ó1£¬ËüÓÃÀ´¼ÆËãĞÅºÅÁ¿¼¯±êÊ¶·û
+	new->seq = ids->seq++; // æ¯åˆ†é…ä¸ªèµ„æºï¼Œä½ç½®åºåˆ—å·åŠ 1ï¼Œå®ƒç”¨æ¥è®¡ç®—ä¿¡å·é‡é›†æ ‡è¯†ç¬¦
 	if(ids->seq > ids->seq_max)
 		ids->seq = 0;
 
 	spin_lock(&ids->ary);
-	ids->entries[id].p = new; // ²åÈëµ½sem_ids.entries->pÖĞ
+	ids->entries[id].p = new; // æ’å…¥åˆ°sem_ids.entries->pä¸­
 	return id;
 }
 
@@ -292,7 +292,7 @@ void kernel_to_ipc64_perm (struct kern_ipc_perm *in, struct ipc64_perm *out)
 }
 
 /**
- * @brief ½«¾ÉIPCÈ¨ÏŞ×ª»»ÎªĞÂIPCÈ¨ÏŞ
+ * @brief å°†æ—§IPCæƒé™è½¬æ¢ä¸ºæ–°IPCæƒé™
  *	ipc64_perm_to_ipc_perm	-	convert old ipc permissions to new
  *	@in: new style IPC permissions
  *	@out: old style IPC permissions
