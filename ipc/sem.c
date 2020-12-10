@@ -817,7 +817,7 @@ static int alloc_undo(struct sem_array *sma, struct sem_undo** unp, int semid, i
  * @brief 改变信号量的值
  * @param semid （由semget返回的）信号量标识符
  * @param tsops
- * @param nsop
+ * @param nsop op数量
  *
  * @return
  */
@@ -831,6 +831,7 @@ asmlinkage long sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 	int undos = 0, decrease = 0, alter = 0;
 	struct sem_queue queue;
 
+	// 异常检测
 	if (nsops < 1 || semid < 0)
 		return -EINVAL;
 	if (nsops > sc_semopm)
@@ -844,7 +845,7 @@ asmlinkage long sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 		error=-EFAULT;
 		goto out_free;
 	}
-	sma = sem_lock(semid);
+	sma = sem_lock(semid); // 锁sem
 	error=-EINVAL;
 	if(sma==NULL)
 		goto out_free;
@@ -852,6 +853,7 @@ asmlinkage long sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 	if (sem_checkid(sma,semid))
 		goto out_unlock_free;
 	error = -EFBIG;
+	// 遍历sop，统计OP
 	for (sop = sops; sop < sops + nsops; sop++) {
 		if (sop->sem_num >= sma->sem_nsems)
 			goto out_unlock_free;
