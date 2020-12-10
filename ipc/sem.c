@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * linux/ipc/sem.c
  * Copyright (C) 1992 Krishna Balasubramanian
  * Copyright (C) 1995 Eric Schenk, Bruno Haible
@@ -113,11 +113,11 @@ void __init sem_init (void)
 
 static int newary (key_t key, int nsems, int semflg)
 /**
- * @brief ´´½¨ĞÅºÅÁ¿
- * @param key ĞÅºÅÁ¿±êÊ¶·û
- * @param nsems ĞÅºÅÁ¿ÊıÄ¿£¬Ò»°ãÎª1
- * @param semflg	IPC_CREATE±íÊ¾ÈôĞÅºÅÁ¿ÒÑ´æÔÚ£¬·µ»Ø¸ÃĞÅºÅÁ¿±êÊ¶·û¡£
- *					IPC_EXCL±íÊ¾ÈôĞÅºÅÁ¿ÒÑ´æÔÚ£¬·µ»Ø´íÎó¡£
+ * @brief åˆ›å»ºä¿¡å·é‡
+ * @param key ä¿¡å·é‡æ ‡è¯†ç¬¦
+ * @param nsems ä¿¡å·é‡æ•°ç›®ï¼Œä¸€èˆ¬ä¸º1
+ * @param semflg	IPC_CREATEè¡¨ç¤ºè‹¥ä¿¡å·é‡å·²å­˜åœ¨ï¼Œè¿”å›è¯¥ä¿¡å·é‡æ ‡è¯†ç¬¦ã€‚
+ *					IPC_EXCLè¡¨ç¤ºè‹¥ä¿¡å·é‡å·²å­˜åœ¨ï¼Œè¿”å›é”™è¯¯ã€‚
  * 
  * @return 
  */
@@ -128,9 +128,9 @@ asmlinkage long sys_semget (key_t key, int nsems, int semflg)
 
 	if (nsems < 0 || nsems > sc_semmsl)
 		return -EINVAL;
-	down(&sem_ids.sem); // ÇëÇóĞÅºÅÁ¿semaphore
+	down(&sem_ids.sem); // è¯·æ±‚ä¿¡å·é‡semaphore
 	
-	// Òì³£¼ì²â
+	// å¼‚å¸¸æ£€æµ‹
 	if (key == IPC_PRIVATE) {
 		err = newary(key, nsems, semflg);
 	} else if ((id = ipc_findkey(&sem_ids, key)) == -1) {  /* key not used */
@@ -141,7 +141,7 @@ asmlinkage long sys_semget (key_t key, int nsems, int semflg)
 	} else if (semflg & IPC_CREAT && semflg & IPC_EXCL) {
 		err = -EEXIST;
 	} else {
-		// ´´½¨ĞÅºÅÁ¿
+		// åˆ›å»ºä¿¡å·é‡
 		sma = sem_lock(id);
 		if(sma==NULL)
 			BUG();
@@ -150,11 +150,11 @@ asmlinkage long sys_semget (key_t key, int nsems, int semflg)
 		else if (ipcperms(&sma->sem_perm, semflg))
 			err = -EACCES;
 		else
-			err = sem_buildid(id, sma->sem_perm.seq); //·µ»Øid
+			err = sem_buildid(id, sma->sem_perm.seq); //è¿”å›id
 		sem_unlock(id);
 	}
 
-	up(&sem_ids.sem); // ¶ÔĞÅºÅÁ¿½øĞĞ»½ĞÑ½ø³Ì²Ù×÷
+	up(&sem_ids.sem); // å¯¹ä¿¡å·é‡è¿›è¡Œå”¤é†’è¿›ç¨‹æ“ä½œ
 	return err;
 }
 
@@ -633,7 +633,7 @@ out_free:
 }
 
 /**
- * @brief ½á¹¹Ìå - ĞÅºÅÁ¿»º³åÇø
+ * @brief ç»“æ„ä½“ - ä¿¡å·é‡ç¼“å†²åŒº
  */
 struct sem_setbuf {
 	uid_t	uid;
@@ -813,6 +813,14 @@ static int alloc_undo(struct sem_array *sma, struct sem_undo** unp, int semid, i
 	return 0;
 }
 
+/**
+ * @brief æ”¹å˜ä¿¡å·é‡çš„å€¼
+ * @param semid ï¼ˆç”±semgetè¿”å›çš„ï¼‰ä¿¡å·é‡æ ‡è¯†ç¬¦
+ * @param tsops
+ * @param nsop
+ *
+ * @return
+ */
 asmlinkage long sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 {
 	int error = -EINVAL;

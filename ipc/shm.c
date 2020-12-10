@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * linux/ipc/shm.c
  * Copyright (C) 1992, 1993 Krishna Balasubramanian
  *	 Many improvements/fixes by Bruno Haible.
@@ -27,20 +27,20 @@
 #include "util.h"
 
  /**
-  * ½á¹¹Ìå - ¹²ÏíÄÚ´æ¹ÜÀí£¨ºËĞÄ×¨ÓÃ£©
+  * ç»“æ„ä½“ - å…±äº«å†…å­˜ç®¡ç†ï¼ˆæ ¸å¿ƒä¸“ç”¨ï¼‰
   */
 struct shmid_kernel
 {
-	struct kern_ipc_perm	shm_perm;		/* IPCĞí¿ÉÈ¨ÏŞ */
-	struct file* shm_file;		/* ¹²ÏíÄÚ´æÎÄ¼ş */
-	int						id;				/* ¹²ÏíÄÚ´æID */
-	unsigned long			shm_nattch;		/* ¹Ò½Óµ½±¾¶Î¹²ÏíÄÚ´æµÄ½ø³ÌÊı */
-	unsigned long			shm_segsz;		/* ¶Î´óĞ¡ */
-	time_t					shm_atim;		/* ×îºó¹Ò½ÓÊ±¼ä */
-	time_t					shm_dtim;		/* ×îºó½â³ı¹Ò½ÓÊ±¼ä */
-	time_t					shm_ctim;		/* ×îºó±ä»¯Ê±¼ä */
-	pid_t					shm_cprid		/* ´´½¨½ø³ÌµÄPID */
-		pid_t					shm_lprid;		/* ×îºóÊ¹ÓÃ½ø³ÌµÄPID */
+	struct kern_ipc_perm	shm_perm;		/* IPCè®¸å¯æƒé™ */
+	struct file* shm_file;		/* å…±äº«å†…å­˜æ–‡ä»¶ */
+	int						id;				/* å…±äº«å†…å­˜ID */
+	unsigned long			shm_nattch;		/* æŒ‚æ¥åˆ°æœ¬æ®µå…±äº«å†…å­˜çš„è¿›ç¨‹æ•° */
+	unsigned long			shm_segsz;		/* æ®µå¤§å° */
+	time_t					shm_atim;		/* æœ€åæŒ‚æ¥æ—¶é—´ */
+	time_t					shm_dtim;		/* æœ€åè§£é™¤æŒ‚æ¥æ—¶é—´ */
+	time_t					shm_ctim;		/* æœ€åå˜åŒ–æ—¶é—´ */
+	pid_t					shm_cprid		/* åˆ›å»ºè¿›ç¨‹çš„PID */
+		pid_t					shm_lprid;		/* æœ€åä½¿ç”¨è¿›ç¨‹çš„PID */
 };
 
 #define shm_flags	shm_perm.mode
@@ -80,13 +80,13 @@ void __init shm_init(void)
 }
 
 /**
- * @brief ¼ì²é¹²ÏíÄÚ´æ
- * @param s ÄÚºË¿Õ¼ä¹²ÏíÄÚ´æid
- * @param id ¹²ÏíÄÚ´æid
+ * @brief æ£€æŸ¥å…±äº«å†…å­˜
+ * @param s å†…æ ¸ç©ºé—´å…±äº«å†…å­˜id
+ * @param id å…±äº«å†…å­˜id
  *
  * @return
- *		ÕıÈ··µ»Ø0
- *		´íÎó·µ»Ø-EIDRM
+ *		æ­£ç¡®è¿”å›0
+ *		é”™è¯¯è¿”å›-EIDRM
  */
 static inline int shm_checkid(struct shmid_kernel* s, int id)
 {
@@ -96,10 +96,10 @@ static inline int shm_checkid(struct shmid_kernel* s, int id)
 }
 
 /**
- * @brief É¾³ı¹²ÏíÄÚ´æµÄid
- * @param id ¹²ÏíÄÚ´æµÄid
+ * @brief åˆ é™¤å…±äº«å†…å­˜çš„id
+ * @param id å…±äº«å†…å­˜çš„id
  *
- * @return ÄÚºË¿Õ¼ä¹²ÏíÄÚ´æidÖ¸Õë
+ * @return å†…æ ¸ç©ºé—´å…±äº«å†…å­˜idæŒ‡é’ˆ
  */
 static inline struct shmid_kernel* shm_rmid(int id)
 {
@@ -107,8 +107,8 @@ static inline struct shmid_kernel* shm_rmid(int id)
 }
 
 /**
- * @brief Ìí¼Ó¹²ÏíÄÚ´æid
- * @param shp Ìí¼ÓidµÄ¹²ÏíÄÚ´æ
+ * @brief æ·»åŠ å…±äº«å†…å­˜id
+ * @param shp æ·»åŠ idçš„å…±äº«å†…å­˜
  */
 static inline int shm_addid(struct shmid_kernel* shp)
 {
@@ -117,8 +117,8 @@ static inline int shm_addid(struct shmid_kernel* shp)
 
 
 /**
- * @brief Îª¹²ÏíÄÚ´æ¹Ò½Ó½ø³Ì
- * @param ¹²ÏíÄÚ´æ
+ * @brief ä¸ºå…±äº«å†…å­˜æŒ‚æ¥è¿›ç¨‹
+ * @param å…±äº«å†…å­˜
  */
 static inline void shm_inc(int id) {
 	struct shmid_kernel* shp;
@@ -133,7 +133,7 @@ static inline void shm_inc(int id) {
 
 /* This is called by fork, once for every shm attach. */
 /**
- * @brief ¹²ÏíÄÚ´æÃ¿¹Ò½ÓÒ»¸ö½ø³Ìµ÷ÓÃÒ»´Î£¨ÓÉforkµ÷ÓÃ£©
+ * @brief å…±äº«å†…å­˜æ¯æŒ‚æ¥ä¸€ä¸ªè¿›ç¨‹è°ƒç”¨ä¸€æ¬¡ï¼ˆç”±forkè°ƒç”¨ï¼‰
  * @param shmd
  */
 static void shm_open(struct vm_area_struct* shmd)
@@ -150,8 +150,8 @@ static void shm_open(struct vm_area_struct* shmd)
  */
 
  /**
-  * @brief ÊÍ·ÅÄÚºË¿Õ¼äÖĞµÄ¹²ÏíÄÚ´æÁ´
-  * @param ÓûÊÍ·ÅµÄ¹²ÏíÄÚ´æ
+  * @brief é‡Šæ”¾å†…æ ¸ç©ºé—´ä¸­çš„å…±äº«å†…å­˜é“¾
+  * @param æ¬²é‡Šæ”¾çš„å…±äº«å†…å­˜
   */
 static void shm_destroy(struct shmid_kernel* shp)
 {
@@ -170,7 +170,7 @@ static void shm_destroy(struct shmid_kernel* shp)
  */
 
  /**
-  * @brief ¹Ø±Õ¹²ÏíÄÚ´æ¡£ÈôÄÚ´æ¶Î±»±ê¼ÇÎªdestroyedÔòÊÍ·ÅËü¡£
+  * @brief å…³é—­å…±äº«å†…å­˜ã€‚è‹¥å†…å­˜æ®µè¢«æ ‡è®°ä¸ºdestroyedåˆ™é‡Šæ”¾å®ƒã€‚
   * @param shmd
   */
 static void shm_close(struct vm_area_struct* shmd)
@@ -181,29 +181,29 @@ static void shm_close(struct vm_area_struct* shmd)
 
 	down(&shm_ids.sem);
 	/* remove from the list of attaches of the shm segment */
-	// ´Ó¹²ÏíÄÚ´æ¶ÎµÄ¹Ò½ÓÁĞ±íÖĞÒÆ³ı½ø³Ì
-	if (!(shp = shm_lock(id))) // Ëø¶¨¹²ÏíÄÚ´æ
+	// ä»å…±äº«å†…å­˜æ®µçš„æŒ‚æ¥åˆ—è¡¨ä¸­ç§»é™¤è¿›ç¨‹
+	if (!(shp = shm_lock(id))) // é”å®šå…±äº«å†…å­˜
 		BUG();
 	shp->shm_lprid = current->pid;
 	shp->shm_dtim = CURRENT_TIME;
 	shp->shm_nattch--;
 	if (shp->shm_nattch == 0 &&
 		shp->shm_flags & SHM_DEST)
-		shm_destroy(shp); // µİ¹éÊµÏÖ¹²ÏíÄÚ´æ¹Ò½Ó½ø³ÌÈ«²¿É¾³ı
+		shm_destroy(shp); // é€’å½’å®ç°å…±äº«å†…å­˜æŒ‚æ¥è¿›ç¨‹å…¨éƒ¨åˆ é™¤
 
-	shm_unlock(id); // ½âËø¹²ÏíÄÚ´æ
+	shm_unlock(id); // è§£é”å…±äº«å†…å­˜
 	up(&shm_ids.sem);
 }
 
 /**
- * @brief mmapº¯Êı
- * ½«Ò»¸öÎÄ¼ş»òÕßÆäËü¶ÔÏóÓ³Éäµ½½ø³ÌµÄµØÖ·¿Õ¼ä£¬ÊµÏÖÎÄ¼ş´ÅÅÌµØÖ·ºÍ½ø³ÌĞéÄâµØÖ·¿Õ¼äÖĞÒ»¶ÎĞéÄâµØÖ·µÄÒ»Ò»¶ÔÓ³¹ØÏµ¡£
- * ÊµÏÖÕâÑùµÄÓ³Éä¹ØÏµºó£¬½ø³Ì¾Í¿ÉÒÔ²ÉÓÃÖ¸ÕëµÄ·½Ê½¶ÁĞ´²Ù×÷ÕâÒ»¶ÎÄÚ´æ£¬
- * ¶øÏµÍ³»á×Ô¶¯»ØĞ´ÔàÒ³Ãæµ½¶ÔÓ¦µÄÎÄ¼ş´ÅÅÌÉÏ£¬¼´Íê³ÉÁË¶ÔÎÄ¼şµÄ²Ù×÷¶ø²»±ØÔÙµ÷ÓÃread,writeµÈÏµÍ³µ÷ÓÃº¯Êı¡£Ïà·´£¬ÄÚºË¿Õ¼ä¶ÔÕâ¶ÎÇøÓòµÄĞŞ¸ÄÒ²Ö±½Ó·´Ó³ÓÃ»§¿Õ¼ä£¬´Ó¶ø¿ÉÒÔÊµÏÖ²»Í¬½ø³Ì¼äµÄÎÄ¼ş¹²Ïí¡£
- * @param file ÎÄ¼ş
- * @param vma ĞéÄâÄÚ´æ¿Õ¼äµØÖ·
+ * @brief mmapå‡½æ•°
+ * å°†ä¸€ä¸ªæ–‡ä»¶æˆ–è€…å…¶å®ƒå¯¹è±¡æ˜ å°„åˆ°è¿›ç¨‹çš„åœ°å€ç©ºé—´ï¼Œå®ç°æ–‡ä»¶ç£ç›˜åœ°å€å’Œè¿›ç¨‹è™šæ‹Ÿåœ°å€ç©ºé—´ä¸­ä¸€æ®µè™šæ‹Ÿåœ°å€çš„ä¸€ä¸€å¯¹æ˜ å…³ç³»ã€‚
+ * å®ç°è¿™æ ·çš„æ˜ å°„å…³ç³»åï¼Œè¿›ç¨‹å°±å¯ä»¥é‡‡ç”¨æŒ‡é’ˆçš„æ–¹å¼è¯»å†™æ“ä½œè¿™ä¸€æ®µå†…å­˜ï¼Œ
+ * è€Œç³»ç»Ÿä¼šè‡ªåŠ¨å›å†™è„é¡µé¢åˆ°å¯¹åº”çš„æ–‡ä»¶ç£ç›˜ä¸Šï¼Œå³å®Œæˆäº†å¯¹æ–‡ä»¶çš„æ“ä½œè€Œä¸å¿…å†è°ƒç”¨read,writeç­‰ç³»ç»Ÿè°ƒç”¨å‡½æ•°ã€‚ç›¸åï¼Œå†…æ ¸ç©ºé—´å¯¹è¿™æ®µåŒºåŸŸçš„ä¿®æ”¹ä¹Ÿç›´æ¥åæ˜ ç”¨æˆ·ç©ºé—´ï¼Œä»è€Œå¯ä»¥å®ç°ä¸åŒè¿›ç¨‹é—´çš„æ–‡ä»¶å…±äº«ã€‚
+ * @param file æ–‡ä»¶
+ * @param vma è™šæ‹Ÿå†…å­˜ç©ºé—´åœ°å€
  * 
- * @return ³É¹¦·µ»Ø0
+ * @return æˆåŠŸè¿”å›0
  */
 static int shm_mmap(struct file* file, struct vm_area_struct* vma)
 {
@@ -224,7 +224,7 @@ static struct vm_operations_struct shm_vm_ops = {
 };
 
 /**
- * @brief ĞÂ¹²ÏíÄÚ´æ¶Î
+ * @brief æ–°å…±äº«å†…å­˜æ®µ
  * @param key
  * @param shmflg
  * @param size
@@ -238,14 +238,14 @@ static int newseg(key_t key, int shmflg, size_t size)
 	char name[13];
 	int id;
 
-	// Òì³£¼ì²â
+	// å¼‚å¸¸æ£€æµ‹
 	if (size < SHMMIN || size > shm_ctlmax)
 		return -EINVAL;
 
 	if (shm_tot + numpages >= shm_ctlall)
 		return -ENOSPC;
 
-	// ·ÖÅäÄÚ´æ
+	// åˆ†é…å†…å­˜
 	shp = (struct shmid_kernel*)kmalloc(sizeof(*shp), GFP_USER);
 	if (!shp)
 		return -ENOMEM;
@@ -259,7 +259,7 @@ static int newseg(key_t key, int shmflg, size_t size)
 	id = shm_addid(shp);
 	if (id == -1)
 		goto no_id;
-	// ³õÊ¼»¯¹²ÏíÄÚ´æÊôĞÔ
+	// åˆå§‹åŒ–å…±äº«å†…å­˜å±æ€§
 	shp->shm_perm.key = key;
 	shp->shm_flags = (shmflg & S_IRWXUGO);
 	shp->shm_cprid = current->pid;
@@ -318,15 +318,15 @@ asmlinkage long sys_shmget(key_t key, size_t size, int shmflg)
 }
 
 /**
- * @brief ½«¹²ÏíÄÚ´æ·¢ËÍÖÁÓÃ»§¿Õ¼ä
- * @param buf Ä¿±êÓÃ»§¿Õ¼äµØÖ·
- * @param in ¹²ÏíÄÚ´æ
- * @param version IPC°æ±¾ - IPC_64£ºĞÂ°æ±¾£¬Ö§³Ö32Î»UIDÒÔ¼°¸ü´óµÄÏûÏ¢µÈ		IPC_OLD£ºÀÏ°æ±¾£¬¼¸ºõ²»Ö§³Ö32Î»UID
+ * @brief å°†å…±äº«å†…å­˜å‘é€è‡³ç”¨æˆ·ç©ºé—´
+ * @param buf ç›®æ ‡ç”¨æˆ·ç©ºé—´åœ°å€
+ * @param in å…±äº«å†…å­˜
+ * @param version IPCç‰ˆæœ¬ - IPC_64ï¼šæ–°ç‰ˆæœ¬ï¼Œæ”¯æŒ32ä½UIDä»¥åŠæ›´å¤§çš„æ¶ˆæ¯ç­‰		IPC_OLDï¼šè€ç‰ˆæœ¬ï¼Œå‡ ä¹ä¸æ”¯æŒ32ä½UID
  *
  * @return
- *		Èô³É¹¦£¬·µ»Ø0
- *		Èô·¢ËÍÊ§°Ü£¬·µ»Ø·¢ËÍÊ§°ÜµÄ×Ö½ÚÊı
- *		Èô²ÎÊı´íÎó£¬·µ»Ø-22[-EINVAL = -22]
+ *		è‹¥æˆåŠŸï¼Œè¿”å›0
+ *		è‹¥å‘é€å¤±è´¥ï¼Œè¿”å›å‘é€å¤±è´¥çš„å­—èŠ‚æ•°
+ *		è‹¥å‚æ•°é”™è¯¯ï¼Œè¿”å›-22[-EINVAL = -22]
  */
 static inline unsigned long copy_shmid_to_user(void* buf, struct shmid64_ds* in, int version)
 {
@@ -360,10 +360,10 @@ struct shm_setbuf {
 };
 
 /**
- * @brief »ñÈ¡À´×ÔÓÃ»§¿Õ¼äµÄ¹²ÏíÄÚ´æ
- * @param out ¹²ÏíÄÚ´æ
- * @param buf ÄÚºË¿Õ¼ä¹²ÏíÄÚ´æÔ´µØÖ·
- * @param version IPC°æ±¾ - IPC_64£ºĞÂ°æ±¾£¬Ö§³Ö32Î»UIDÒÔ¼°¸ü´óµÄÏûÏ¢µÈ		IPC_OLD£ºÀÏ°æ±¾£¬¼¸ºõ²»Ö§³Ö32Î»UID
+ * @brief è·å–æ¥è‡ªç”¨æˆ·ç©ºé—´çš„å…±äº«å†…å­˜
+ * @param out å…±äº«å†…å­˜
+ * @param buf å†…æ ¸ç©ºé—´å…±äº«å†…å­˜æºåœ°å€
+ * @param version IPCç‰ˆæœ¬ - IPC_64ï¼šæ–°ç‰ˆæœ¬ï¼Œæ”¯æŒ32ä½UIDä»¥åŠæ›´å¤§çš„æ¶ˆæ¯ç­‰		IPC_OLDï¼šè€ç‰ˆæœ¬ï¼Œå‡ ä¹ä¸æ”¯æŒ32ä½UID
  */
 static inline unsigned long copy_shmid_from_user(struct shm_setbuf* out, void* buf, int version)
 {
@@ -400,15 +400,15 @@ static inline unsigned long copy_shmid_from_user(struct shm_setbuf* out, void* b
 }
 
 /**
- * @brief ½«¹²ÏíÄÚ´æĞÅÏ¢·¢ËÍÖÁÓÃ»§¿Õ¼ä
- * @param buf Ä¿±êÓÃ»§¿Õ¼äµØÖ·
- * @param in ¹²ÏíÄÚ´æĞÅÏ¢
- * @param version IPC°æ±¾ - IPC_64£ºĞÂ°æ±¾£¬Ö§³Ö32Î»UIDÒÔ¼°¸ü´óµÄÏûÏ¢µÈ		IPC_OLD£ºÀÏ°æ±¾£¬¼¸ºõ²»Ö§³Ö32Î»UID
+ * @brief å°†å…±äº«å†…å­˜ä¿¡æ¯å‘é€è‡³ç”¨æˆ·ç©ºé—´
+ * @param buf ç›®æ ‡ç”¨æˆ·ç©ºé—´åœ°å€
+ * @param in å…±äº«å†…å­˜ä¿¡æ¯
+ * @param version IPCç‰ˆæœ¬ - IPC_64ï¼šæ–°ç‰ˆæœ¬ï¼Œæ”¯æŒ32ä½UIDä»¥åŠæ›´å¤§çš„æ¶ˆæ¯ç­‰		IPC_OLDï¼šè€ç‰ˆæœ¬ï¼Œå‡ ä¹ä¸æ”¯æŒ32ä½UID
  *
  * @return
- *		Èô³É¹¦£¬·µ»Ø0
- *		Èô·¢ËÍÊ§°Ü£¬·µ»Ø·¢ËÍÊ§°ÜµÄ×Ö½ÚÊı
- *		Èô²ÎÊı´íÎó£¬·µ»Ø-22[-EINVAL = -22]
+ *		è‹¥æˆåŠŸï¼Œè¿”å›0
+ *		è‹¥å‘é€å¤±è´¥ï¼Œè¿”å›å‘é€å¤±è´¥çš„å­—èŠ‚æ•°
+ *		è‹¥å‚æ•°é”™è¯¯ï¼Œè¿”å›-22[-EINVAL = -22]
  */
 static inline unsigned long copy_shminfo_to_user(void* buf, struct shminfo64* in, int version)
 {
@@ -437,9 +437,9 @@ static inline unsigned long copy_shminfo_to_user(void* buf, struct shminfo64* in
 }
 
 /**
- * @brief »ñÈ¡¹²ÏíÄÚ´æÏàÁªÎÄ¼şĞÅÏ¢
- * @param rss ½ÓÊÕinodeÏà¹ØĞÅÏ¢
- * @param swp ½ÓÊÕinodeÏà¹ØĞÅÏ¢
+ * @brief è·å–å…±äº«å†…å­˜ç›¸è”æ–‡ä»¶ä¿¡æ¯
+ * @param rss æ¥æ”¶inodeç›¸å…³ä¿¡æ¯
+ * @param swp æ¥æ”¶inodeç›¸å…³ä¿¡æ¯
  */
 static void shm_get_stat(unsigned long* rss, unsigned long* swp)
 {
@@ -449,17 +449,17 @@ static void shm_get_stat(unsigned long* rss, unsigned long* swp)
 	*rss = 0;
 	*swp = 0;
 
-	// ±éÀúËùÓĞ¹²ÏíÄÚ´æ
+	// éå†æ‰€æœ‰å…±äº«å†…å­˜
 	for (i = 0; i <= shm_ids.max_id; i++) {
 		struct shmid_kernel* shp;
 		struct inode* inode;
 
-		shp = shm_get(i); // ÓÉid»ñµÃ¹²ÏíÄÚ´æÖ¸Õë
+		shp = shm_get(i); // ç”±idè·å¾—å…±äº«å†…å­˜æŒ‡é’ˆ
 		if (shp == NULL)
 			continue;
 		inode = shp->shm_file->f_dentry->d_inode;
 		info = SHMEM_I(inode);
-		spin_lock(&info->lock); // ×ÔĞıËø
+		spin_lock(&info->lock); // è‡ªæ—‹é”
 		*rss += inode->i_mapping->nrpages;
 		*swp += info->swapped;
 		spin_unlock(&info->lock);
@@ -467,21 +467,21 @@ static void shm_get_stat(unsigned long* rss, unsigned long* swp)
 }
 
 /**
- * @brief »ñÈ¡ºÍÉèÖÃ¹²ÏíÄÚ´æµÄÊôĞÔ
- * @param shmid ¹²ÏíÄÚ´æ±êÊ¶·û
- * @param cmd	IPC_STAT / SHM_STAT£º°Ñshmid_ds½á¹¹ÖĞµÄÊı¾İÉèÖÃÎª¹²ÏíÄÚ´æµÄµ±Ç°¹ØÁªÖµ£¬¼´ÓÃ¹²ÏíÄÚ´æµÄµ±Ç°¹ØÁªÖµ¸²¸ÇbufµÄÖµ¡£
- * 				IPC_SET£ºÈç¹û½ø³ÌÓĞ×ã¹»µÄÈ¨ÏŞ£¬¾Í°Ñ¹²ÏíÄÚ´æµÄµ±Ç°¹ØÁªÖµÉèÖÃÎªbuf¸ø³öµÄÖµ    
- *				IPC_RMID£ºÉ¾³ı¹²ÏíÄÚ´æ
- * @param buf£º¹²ÏíÄÚ´æ½á¹¹Ìå
+ * @brief è·å–å’Œè®¾ç½®å…±äº«å†…å­˜çš„å±æ€§
+ * @param shmid å…±äº«å†…å­˜æ ‡è¯†ç¬¦
+ * @param cmd	IPC_STAT / SHM_STATï¼šæŠŠshmid_dsç»“æ„ä¸­çš„æ•°æ®è®¾ç½®ä¸ºå…±äº«å†…å­˜çš„å½“å‰å…³è”å€¼ï¼Œå³ç”¨å…±äº«å†…å­˜çš„å½“å‰å…³è”å€¼è¦†ç›–bufçš„å€¼ã€‚
+ * 				IPC_SETï¼šå¦‚æœè¿›ç¨‹æœ‰è¶³å¤Ÿçš„æƒé™ï¼Œå°±æŠŠå…±äº«å†…å­˜çš„å½“å‰å…³è”å€¼è®¾ç½®ä¸ºbufç»™å‡ºçš„å€¼    
+ *				IPC_RMIDï¼šåˆ é™¤å…±äº«å†…å­˜
+ * @param bufï¼šå…±äº«å†…å­˜ç»“æ„ä½“
  *
  * @return
- * 	Èô³É¹¦£¬·µ»Ø0
- * 	ÈôÊ§°Ü£¬·µ»Ø-
- *		EACCES£º²ÎÊıcmdÎªIPC_STAT£¬È´ÎŞÈ¨ÏŞ¶ÁÈ¡¸Ã¹²ÏíÄÚ´æ
- * 		EFAULT£º²ÎÊıbufÖ¸ÏòÎŞĞ§µÄÄÚ´æµØÖ·
- * 		EIDRM£º±êÊ¶·ûÎªshmidµÄ¹²ÏíÄÚ´æÒÑ±»É¾³ı
- * 		EINVAL£ºÎŞĞ§µÄ²ÎÊıcmd»òshmid
- * 		EPERM£º²ÎÊıcmdÎªIPC_SET»òIPC_RMID£¬È´ÎŞ×ã¹»µÄÈ¨ÏŞÖ´ĞĞ
+ * 	è‹¥æˆåŠŸï¼Œè¿”å›0
+ * 	è‹¥å¤±è´¥ï¼Œè¿”å›-
+ *		EACCESï¼šå‚æ•°cmdä¸ºIPC_STATï¼Œå´æ— æƒé™è¯»å–è¯¥å…±äº«å†…å­˜
+ * 		EFAULTï¼šå‚æ•°bufæŒ‡å‘æ— æ•ˆçš„å†…å­˜åœ°å€
+ * 		EIDRMï¼šæ ‡è¯†ç¬¦ä¸ºshmidçš„å…±äº«å†…å­˜å·²è¢«åˆ é™¤
+ * 		EINVALï¼šæ— æ•ˆçš„å‚æ•°cmdæˆ–shmid
+ * 		EPERMï¼šå‚æ•°cmdä¸ºIPC_SETæˆ–IPC_RMIDï¼Œå´æ— è¶³å¤Ÿçš„æƒé™æ‰§è¡Œ
  */
 asmlinkage long sys_shmctl(int shmid, int cmd, struct shmid_ds* buf)
 {
@@ -495,7 +495,7 @@ asmlinkage long sys_shmctl(int shmid, int cmd, struct shmid_ds* buf)
 	version = ipc_parse_version(&cmd);
 
 	switch (cmd) { /* replace with proc interface ? */
-	// INFOÃüÁî
+	// INFOå‘½ä»¤
 	case IPC_INFO:
 	{
 		struct shminfo64 shminfo;
@@ -534,14 +534,14 @@ asmlinkage long sys_shmctl(int shmid, int cmd, struct shmid_ds* buf)
 
 		return err < 0 ? 0 : err;
 	}
-	// STATÃüÁî
+	// STATå‘½ä»¤
 	case SHM_STAT:
 	case IPC_STAT:
 	{
 		struct shmid64_ds tbuf;
 		int result;
 		memset(&tbuf, 0, sizeof(tbuf));
-		// Ëø¶¨¹²ÏíÄÚ´æ
+		// é”å®šå…±äº«å†…å­˜
 		shp = shm_lock(shmid);
 		if (shp == NULL)
 			return -EINVAL;
@@ -561,7 +561,7 @@ asmlinkage long sys_shmctl(int shmid, int cmd, struct shmid_ds* buf)
 		if (ipcperms(&shp->shm_perm, S_IRUGO))
 			goto out_unlock;
 		kernel_to_ipc64_perm(&shp->shm_perm, &tbuf.shm_perm);
-		// Êı¾İ¸²Ğ´
+		// æ•°æ®è¦†å†™
 		tbuf.shm_segsz = shp->shm_segsz;
 		tbuf.shm_atime = shp->shm_atim;
 		tbuf.shm_dtime = shp->shm_dtim;
@@ -569,12 +569,12 @@ asmlinkage long sys_shmctl(int shmid, int cmd, struct shmid_ds* buf)
 		tbuf.shm_cpid = shp->shm_cprid;
 		tbuf.shm_lpid = shp->shm_lprid;
 		tbuf.shm_nattch = shp->shm_nattch;
-		shm_unlock(shmid); // ½âËø
+		shm_unlock(shmid); // è§£é”
 		if (copy_shmid_to_user(buf, &tbuf, version))
 			return -EFAULT;
 		return result;
 	}
-	// LOCKÃüÁî
+	// LOCKå‘½ä»¤
 	case SHM_LOCK:
 	case SHM_UNLOCK:
 	{
@@ -601,7 +601,7 @@ asmlinkage long sys_shmctl(int shmid, int cmd, struct shmid_ds* buf)
 		shm_unlock(shmid);
 		return err;
 	}
-	// RMIDÃüÁî
+	// RMIDå‘½ä»¤
 	case IPC_RMID:
 	{
 		/*
@@ -614,7 +614,7 @@ asmlinkage long sys_shmctl(int shmid, int cmd, struct shmid_ds* buf)
 		 *	Instead we set a destroyed flag, and then blow
 		 *	the name away when the usage hits zero.
 		 */
-		// ÉèÖÃÒ»¸öÏú»Ù±êÖ¾£¬È»ºóÔÚÊ¹ÓÃÂÊ´ïµ½ÁãÊ±½«¹²ÏíÄÚ´æºÍÎÄ¼şÉ¾³ı¡£
+		// è®¾ç½®ä¸€ä¸ªé”€æ¯æ ‡å¿—ï¼Œç„¶ååœ¨ä½¿ç”¨ç‡è¾¾åˆ°é›¶æ—¶å°†å…±äº«å†…å­˜å’Œæ–‡ä»¶åˆ é™¤ã€‚
 		down(&shm_ids.sem);
 		shp = shm_lock(shmid);
 		err = -EINVAL;
@@ -642,10 +642,10 @@ asmlinkage long sys_shmctl(int shmid, int cmd, struct shmid_ds* buf)
 		up(&shm_ids.sem);
 		return err;
 	}
-	// SETÃüÁî
+	// SETå‘½ä»¤
 	case IPC_SET:
 	{
-		// »ù±¾²Ù×÷ÓëÒì³£¼ì²â
+		// åŸºæœ¬æ“ä½œä¸å¼‚å¸¸æ£€æµ‹
 		if (copy_shmid_from_user(&setbuf, buf, version))
 			return -EFAULT;
 		down(&shm_ids.sem);
@@ -662,7 +662,7 @@ asmlinkage long sys_shmctl(int shmid, int cmd, struct shmid_ds* buf)
 			!capable(CAP_SYS_ADMIN)) {
 			goto out_unlock_up;
 		}
-		// Êı¾İĞ´Èë
+		// æ•°æ®å†™å…¥
 		shp->shm_perm.uid = setbuf.uid;
 		shp->shm_perm.gid = setbuf.gid;
 		shp->shm_flags = (shp->shm_flags & ~S_IRWXUGO)
@@ -690,15 +690,15 @@ out_unlock:
  * Fix shmaddr, allocate descriptor, map shm, add attach descriptor to lists.
  */
 /**
- * @brief ¹Ò½Ó²Ù×÷ - ´´½¨¹²ÏíÄÚ´æ¶ÎÖ®ºó£¬½«½ø³ÌÁ¬½Óµ½ËüµÄµØÖ·¿Õ¼ä£»
- * @coder ĞŞ¸´¹²ÏíÄÚ´æµØÖ·£¬·ÖÅäÃèÊö·û£¬Ó³Éä¹²ÏíÄÚ´æ£¬½«¸½¼ÓÃèÊö·ûÌí¼Óµ½ÁĞ±í¡£
- * @param shm_id ¹²ÏíÄÚ´æ±êÊ¶·û¡£
- * @param shm_addr Ö¸¶¨¹²ÏíÄÚ´æÁ¬½Óµ½µ±Ç°½ø³ÌÖĞµÄµØÖ·Î»ÖÃ£¬Í¨³£Îª¿Õ£¬±íÊ¾ÈÃÏµÍ³À´Ñ¡Ôñ¹²ÏíÄÚ´æµÄµØÖ·¡£
- * @param shm_flg ±êÖ¾Î»£¬Èç¹ûÖµÎªSHM_RDONLY£¬Ôò½ø³ÌÒÔÖ»¶ÁµÄ·½Ê½·ÃÎÊ¹²ÏíÄÚ´æ£¬·ñÔòÒÔ¶ÁĞ´·½Ê½·ÃÎÊ¹²ÏíÄÚ´æ¡£
+ * @brief æŒ‚æ¥æ“ä½œ - åˆ›å»ºå…±äº«å†…å­˜æ®µä¹‹åï¼Œå°†è¿›ç¨‹è¿æ¥åˆ°å®ƒçš„åœ°å€ç©ºé—´ï¼›
+ * @coder ä¿®å¤å…±äº«å†…å­˜åœ°å€ï¼Œåˆ†é…æè¿°ç¬¦ï¼Œæ˜ å°„å…±äº«å†…å­˜ï¼Œå°†é™„åŠ æè¿°ç¬¦æ·»åŠ åˆ°åˆ—è¡¨ã€‚
+ * @param shm_id å…±äº«å†…å­˜æ ‡è¯†ç¬¦ã€‚
+ * @param shm_addr æŒ‡å®šå…±äº«å†…å­˜è¿æ¥åˆ°å½“å‰è¿›ç¨‹ä¸­çš„åœ°å€ä½ç½®ï¼Œé€šå¸¸ä¸ºç©ºï¼Œè¡¨ç¤ºè®©ç³»ç»Ÿæ¥é€‰æ‹©å…±äº«å†…å­˜çš„åœ°å€ã€‚
+ * @param shm_flg æ ‡å¿—ä½ï¼Œå¦‚æœå€¼ä¸ºSHM_RDONLYï¼Œåˆ™è¿›ç¨‹ä»¥åªè¯»çš„æ–¹å¼è®¿é—®å…±äº«å†…å­˜ï¼Œå¦åˆ™ä»¥è¯»å†™æ–¹å¼è®¿é—®å…±äº«å†…å­˜ã€‚
  * 
  * @return 
- *			Èô³É¹¦£¬Ôò·µ»Ø¹²Ïí´æ´¢¶ÎµØÖ·
- *			Èô³ö´í£¬Ôò·µ»Ø´íÎó´úÂë
+ *			è‹¥æˆåŠŸï¼Œåˆ™è¿”å›å…±äº«å­˜å‚¨æ®µåœ°å€
+ *			è‹¥å‡ºé”™ï¼Œåˆ™è¿”å›é”™è¯¯ä»£ç 
  */
 asmlinkage long sys_shmat(int shmid, char* shmaddr, int shmflg, ulong* raddr)
 {
@@ -759,12 +759,12 @@ asmlinkage long sys_shmat(int shmid, char* shmaddr, int shmflg, ulong* raddr)
 		shm_unlock(shmid);
 		return -EACCES;
 	}
-	// ¹Ò½Ó
+	// æŒ‚æ¥
 	file = shp->shm_file;
 	size = file->f_dentry->d_inode->i_size;
 	shp->shm_nattch++;
 	shm_unlock(shmid);
-	// Ğ´mmapĞÅºÅÁ¿
+	// å†™mmapä¿¡å·é‡
 	down_write(&current->mm->mmap_sem);
 	if (addr && !(shmflg & SHM_REMAP)) {
 		user_addr = ERR_PTR(-EINVAL);
@@ -781,7 +781,7 @@ asmlinkage long sys_shmat(int shmid, char* shmaddr, int shmflg, ulong* raddr)
 
 	user_addr = (void*)do_mmap(file, addr, size, prot, flags, 0);
 
-// Òì³££¬²Ù×÷»Ø¹ö
+// å¼‚å¸¸ï¼Œæ“ä½œå›æ»š
 invalid:
 	up_write(&current->mm->mmap_sem);
 
@@ -808,10 +808,10 @@ invalid:
  * The work is done in shm_close.
  */
 /**
- * @brief ·ÖÀë²Ù×÷ - ¸Ã²Ù×÷²»´ÓÏµÍ³ÖĞÉ¾³ı±êÊ¶·ûºÍÆäÊı¾İ½á¹¹£¬ÒªÏÔÊ¾µ÷ÓÃshmctl(´øÃüÁîIPC_RMID)²ÅÄÜÉ¾³ıËü
- * @param ¹²ÏíÄÚ´æµØÖ·£¬µ÷ÓÃshmatÊ±»ñµÃ
+ * @brief åˆ†ç¦»æ“ä½œ - è¯¥æ“ä½œä¸ä»ç³»ç»Ÿä¸­åˆ é™¤æ ‡è¯†ç¬¦å’Œå…¶æ•°æ®ç»“æ„ï¼Œè¦æ˜¾ç¤ºè°ƒç”¨shmctl(å¸¦å‘½ä»¤IPC_RMID)æ‰èƒ½åˆ é™¤å®ƒ
+ * @param å…±äº«å†…å­˜åœ°å€ï¼Œè°ƒç”¨shmatæ—¶è·å¾—
  * 
- * @return ³É¹¦·µ»Ø0
+ * @return æˆåŠŸè¿”å›0
  */
 asmlinkage long sys_shmdt(char* shmaddr)
 {

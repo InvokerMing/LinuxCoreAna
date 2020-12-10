@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * linux/ipc/msg.c
  * Copyright (C) 1992 Krishna Balasubramanian
  *
@@ -26,35 +26,34 @@
 #include <asm-i386/uaccess.h> //<asm/uaccess.h>
 #include "util.h"
 
-/* sysctlËùĞè³£Á¿ */
+/* sysctlæ‰€éœ€å¸¸é‡ */
 int msg_ctlmax = MSGMAX;
 int msg_ctlmnb = MSGMNB;
 int msg_ctlmni = MSGMNI;
 
 /**
- * @brief ½á¹¹Ìå - ÏûÏ¢½ÓÊÕÕß
+ * @brief ç»“æ„ä½“ - æ¶ˆæ¯æ¥æ”¶è€…
  */
 struct msg_receiver {
-	struct list_head r_list;		/* ÓÃÓÚÁ¬½Ó½á¹¹ÌåµÄÁ´±íÍ·Ö¸Õë */
-	struct task_struct* r_tsk;		/* ÏûÏ¢½ÓÊÕÕßµÄÈÎÎñ */
+	struct list_head r_list;		/* ç”¨äºè¿æ¥ç»“æ„ä½“çš„é“¾è¡¨å¤´æŒ‡é’ˆ */
+	struct task_struct* r_tsk;		/* æ¶ˆæ¯æ¥æ”¶è€…çš„ä»»åŠ¡ */
+	int r_mode;						/* æ¨¡å¼ */
+	long r_msgtype;					/* æ¶ˆæ¯ç±»åˆ« */
+	long r_maxsize;					/* æ¶ˆæ¯æœ€å¤§å®¹é‡ */
 
-	int r_mode;						/* Ä£Ê½ */
-	long r_msgtype;					/* ÏûÏ¢Àà±ğ */
-	long r_maxsize;					/* ÏûÏ¢×î´óÈİÁ¿ */
-
-	struct msg_msg* volatile r_msg;	/* ½ÓÊÕµÄÏûÏ¢ */
+	struct msg_msg* volatile r_msg;	/* æ¥æ”¶çš„æ¶ˆæ¯ */
 };
 
 /**
- * @brief ½á¹¹Ìå - ÏûÏ¢·¢ËÍÕß
+ * @brief ç»“æ„ä½“ - æ¶ˆæ¯å‘é€è€…
  */
 struct msg_sender {
-	struct list_head list;		/* ÓÃÓÚÁ¬½Ó½á¹¹ÌåµÄÁ´±íÍ·Ö¸Õë */
-	struct task_struct* tsk;	/* ½ø³Ì¿ØÖÆ¿é */
+	struct list_head list;		/* ç”¨äºè¿æ¥ç»“æ„ä½“çš„é“¾è¡¨å¤´æŒ‡é’ˆ */
+	struct task_struct* tsk;	/* è¿›ç¨‹æ§åˆ¶å— */
 };
 
 /**
- * @brief ½á¹¹Ìå - ÓÃÓÚÁ¬½ÓÏûÏ¢µÄÏÂÒ»ÌõÏûÏ¢µÄµ¥ÏòÁ´±í
+ * @brief ç»“æ„ä½“ - ç”¨äºè¿æ¥æ¶ˆæ¯çš„ä¸‹ä¸€æ¡æ¶ˆæ¯çš„å•å‘é“¾è¡¨
  */
 struct msg_msgseg {
 	struct msg_msgseg* next;
@@ -62,13 +61,13 @@ struct msg_msgseg {
 };
 
 /**
- * @brief ½á¹¹Ìå - ÏûÏ¢
+ * @brief ç»“æ„ä½“ - æ¶ˆæ¯
  */
 struct msg_msg {
-	struct list_head m_list;	/* ÓÃÓÚÁ¬½Ó½á¹¹ÌåµÄÁ´±íÍ·Ö¸Õë */
-	long  m_type;				/* ÏûÏ¢Àà±ğ */
-	int m_ts;					/* ÏûÏ¢ÎÄ±¾´óĞ¡ */
-	struct msg_msgseg* next;	/* ÏÂÒ»ÌõÏûÏ¢ */
+	struct list_head m_list;	/* ç”¨äºè¿æ¥ç»“æ„ä½“çš„é“¾è¡¨å¤´æŒ‡é’ˆ */
+	long  m_type;				/* æ¶ˆæ¯ç±»åˆ« */
+	int m_ts;					/* æ¶ˆæ¯æ–‡æœ¬å¤§å° */
+	struct msg_msgseg* next;	/* ä¸‹ä¸€æ¡æ¶ˆæ¯ */
 	/* the actual message follows immediately */
 };
 
@@ -76,22 +75,22 @@ struct msg_msg {
 #define DATALEN_SEG	(PAGE_SIZE-sizeof(struct msg_msgseg))
 
 /**
- * @brief ½á¹¹Ìå - ÏûÏ¢¶ÓÁĞ
+ * @brief ç»“æ„ä½“ - æ¶ˆæ¯é˜Ÿåˆ—
  */
 struct msg_queue {
-	struct kern_ipc_perm q_perm;        /* IPCĞí¿ÉÈ¨ÏŞ */
-	time_t q_stime;						/* ×îºóÒ»ÌõÏûÏ¢·¢ËÍÊ±¼ä */
-	time_t q_rtime;						/* ×îºóÒ»ÌõÏûÏ¢½ÓÊÜÊ±¼ä */
-	time_t q_ctime;						/* ×îºóÒ»´Î¸Ä¶¯Ê±¼ä */	
-	unsigned long q_cbytes;				/* ¶ÓÁĞÖĞµÄµ±Ç°×Ö½ÚÊı */
-	unsigned long q_qnum;				/* ¶ÓÁĞÖĞµÄÏûÏ¢Êı */
-	unsigned long q_qbytes;				/* ¶ÓÁĞÖĞµÄ×î´ó×Ö½ÚÊı */
-	pid_t q_lspid;						/* ×îºóÒ»Ìõ·¢ËÍÏûÏ¢µÄ½ø³ÌID */
-	pid_t q_lrpid;						/* ×îºóÒ»Ìõ½ÓÊÕÏûÏ¢µÄ½ø³ÌID */
+	struct kern_ipc_perm q_perm;        /* IPCè®¸å¯æƒé™ */
+	time_t q_stime;						/* æœ€åä¸€æ¡æ¶ˆæ¯å‘é€æ—¶é—´ */
+	time_t q_rtime;						/* æœ€åä¸€æ¡æ¶ˆæ¯æ¥å—æ—¶é—´ */
+	time_t q_ctime;						/* æœ€åä¸€æ¬¡æ”¹åŠ¨æ—¶é—´ */	
+	unsigned long q_cbytes;				/* é˜Ÿåˆ—ä¸­çš„å½“å‰å­—èŠ‚æ•° */
+	unsigned long q_qnum;				/* é˜Ÿåˆ—ä¸­çš„æ¶ˆæ¯æ•° */
+	unsigned long q_qbytes;				/* é˜Ÿåˆ—ä¸­çš„æœ€å¤§å­—èŠ‚æ•° */
+	pid_t q_lspid;						/* æœ€åä¸€æ¡å‘é€æ¶ˆæ¯çš„è¿›ç¨‹ID */
+	pid_t q_lrpid;						/* æœ€åä¸€æ¡æ¥æ”¶æ¶ˆæ¯çš„è¿›ç¨‹ID */
 
-	struct list_head q_messages;		/* ÏûÏ¢¶ÓÁĞÖĞ */
-	struct list_head q_receivers;		/* ½ÓÊÕĞÅºÅ½ø³ÌµÈ´ı¶ÓÁĞ */
-	struct list_head q_senders;			/* ·¢ËÍÏûÏ¢½ø³ÌµÈ´ı¶ÓÁĞ */
+	struct list_head q_messages;		/* æ¶ˆæ¯é˜Ÿåˆ—ä¸­ */
+	struct list_head q_receivers;		/* æ¥æ”¶ä¿¡å·è¿›ç¨‹ç­‰å¾…é˜Ÿåˆ— */
+	struct list_head q_senders;			/* å‘é€æ¶ˆæ¯è¿›ç¨‹ç­‰å¾…é˜Ÿåˆ— */
 };
 
 #define SEARCH_ANY			1
@@ -129,21 +128,21 @@ void __init msg_init(void)
 }
 
 /**
- * @brief ´´½¨Ò»¸öĞÂµÄÏûÏ¢¶ÓÁĞ
+ * @brief åˆ›å»ºä¸€ä¸ªæ–°çš„æ¶ˆæ¯é˜Ÿåˆ—
  * @param key 
  * @param msgflg 
  *
  * @return 
- *		Èô³É¹¦£¬·µ»ØÏûÏ¢¶ÓÁĞID
- *      ÈôÎªÏûÏ¢½á¹¹Ìå·ÖÅäÄÚ´æÊ§°Ü£¬·µ»ØÄÚ´æÒç³ö´íÎó[-ENOMEM = -12]
- *		ÈôIPCÊı×éÌí¼ÓIDÊ§°Ü£¬·µ»ØÉè±¸ÎŞ¿ÕÓà¿Õ¼ä´íÎó[-ENOSPC = -28]
+ *		è‹¥æˆåŠŸï¼Œè¿”å›æ¶ˆæ¯é˜Ÿåˆ—ID
+ *      è‹¥ä¸ºæ¶ˆæ¯ç»“æ„ä½“åˆ†é…å†…å­˜å¤±è´¥ï¼Œè¿”å›å†…å­˜æº¢å‡ºé”™è¯¯[-ENOMEM = -12]
+ *		è‹¥IPCæ•°ç»„æ·»åŠ IDå¤±è´¥ï¼Œè¿”å›è®¾å¤‡æ— ç©ºä½™ç©ºé—´é”™è¯¯[-ENOSPC = -28]
  */
 static int newque(key_t key, int msgflg)
 {
 	int id;
 	struct msg_queue* msq;
 
-	// ·ÖÅäÄÚ´æ¡¢IPC_ID
+	// åˆ†é…å†…å­˜ã€IPC_ID
 	msq = (struct msg_queue*)kmalloc(sizeof(*msq), GFP_KERNEL);
 	if (!msq)
 		return -ENOMEM;
@@ -155,7 +154,7 @@ static int newque(key_t key, int msgflg)
 	msq->q_perm.mode = (msgflg & S_IRWXUGO);
 	msq->q_perm.key = key;
 
-	// ³õÊ¼»¯ÊôĞÔ
+	// åˆå§‹åŒ–å±æ€§
 	msq->q_stime = msq->q_rtime = 0;
 	msq->q_ctime = CURRENT_TIME;
 	msq->q_cbytes = msq->q_qnum = 0;
@@ -166,20 +165,20 @@ static int newque(key_t key, int msgflg)
 	INIT_LIST_HEAD(&msq->q_senders);
 	msg_unlock(id);
 
-	//´´½¨ÏûÏ¢¶ÓÁĞID²¢·µ»Ø
+	//åˆ›å»ºæ¶ˆæ¯é˜Ÿåˆ—IDå¹¶è¿”å›
 	return msg_buildid(id, msq->q_perm.seq);
 }
 
 /**
- * @brief ÊÍ·ÅÖ¸¶¨ÏûÏ¢ËùÕ¼ÄÚ´æ¿Õ¼ä/×ÊÔ´
- * @param msg Ö¸¶¨ÏûÏ¢µÄÖ¸Õë
+ * @brief é‡Šæ”¾æŒ‡å®šæ¶ˆæ¯æ‰€å å†…å­˜ç©ºé—´/èµ„æº
+ * @param msg æŒ‡å®šæ¶ˆæ¯çš„æŒ‡é’ˆ
  */
 static void free_msg(struct msg_msg* msg)
 {
 	struct msg_msgseg* seg;
 	seg = msg->next;
 	kfree(msg);
-	// ÊÍ·ÅÕû¸öÏûÏ¢¶ÓÁĞ
+	// é‡Šæ”¾æ•´ä¸ªæ¶ˆæ¯é˜Ÿåˆ—
 	while (seg != NULL) {
 		struct msg_msgseg* tmp = seg->next;
 		kfree(seg);
@@ -188,14 +187,14 @@ static void free_msg(struct msg_msg* msg)
 }
 
 /**
- * @brief ¶ÁÈ¡ËùÓĞÏûÏ¢
- * @param src ÏûÏ¢Ô´µØÖ·
- * @param len ÏûÏ¢³¤¶È
+ * @brief è¯»å–æ‰€æœ‰æ¶ˆæ¯
+ * @param src æ¶ˆæ¯æºåœ°å€
+ * @param len æ¶ˆæ¯é•¿åº¦
  *
  * @return 
- *		Èô³É¹¦£¬·µ»ØÏûÏ¢Á´±íµÄÍ·Ö¸Õë
- *		ÈôÎªÏûÏ¢½á¹¹Ìå·ÖÅäÄÚ´æÊ§°Ü£¬·µ»ØÄÚ´æÒç³ö´íÎóÖ¸Õë[-ENOMEM = -12]
- *      Èô¶ÁÈ¡Êı¾İÊ§°Ü£¬·µ»ØµØÖ·´íÎóÖ¸Õë[-EFAULT = -14]
+ *		è‹¥æˆåŠŸï¼Œè¿”å›æ¶ˆæ¯é“¾è¡¨çš„å¤´æŒ‡é’ˆ
+ *		è‹¥ä¸ºæ¶ˆæ¯ç»“æ„ä½“åˆ†é…å†…å­˜å¤±è´¥ï¼Œè¿”å›å†…å­˜æº¢å‡ºé”™è¯¯æŒ‡é’ˆ[-ENOMEM = -12]
+ *      è‹¥è¯»å–æ•°æ®å¤±è´¥ï¼Œè¿”å›åœ°å€é”™è¯¯æŒ‡é’ˆ[-EFAULT = -14]
  */
 static struct msg_msg* load_msg(void* src, int len)
 {
@@ -204,25 +203,25 @@ static struct msg_msg* load_msg(void* src, int len)
 	int err;
 	int alen;
 
-	// ±ß½ç¼ì²â
+	// è¾¹ç•Œæ£€æµ‹
 	alen = len;
 	if (alen > DATALEN_MSG)
 		alen = DATALEN_MSG;
 
-	// ÎªÏûÏ¢·ÖÅäÄÚ´æ
+	// ä¸ºæ¶ˆæ¯åˆ†é…å†…å­˜
 	msg = (struct msg_msg*)kmalloc(sizeof(*msg) + alen, GFP_KERNEL);
 	if (msg == NULL)
 		return ERR_PTR(-ENOMEM);
 
 	msg->next = NULL;
 
-	// ¶ÁÈ¡µÚÒ»ÌõÏûÏ¢
+	// è¯»å–ç¬¬ä¸€æ¡æ¶ˆæ¯
 	if (copy_from_user(msg + 1, src, alen)) {
 		err = -EFAULT;
 		goto out_err;
 	}
 
-	// ¶ÁÈ¡¸ÃÏûÏ¢ºóµÄËùÓĞÏûÏ¢£¬ÒÔÁ´±íµÄĞÎÊ½Á¬½ÓÔÚµÚÒ»ÌõÏûÏ¢Ä©Î²
+	// è¯»å–è¯¥æ¶ˆæ¯åçš„æ‰€æœ‰æ¶ˆæ¯ï¼Œä»¥é“¾è¡¨çš„å½¢å¼è¿æ¥åœ¨ç¬¬ä¸€æ¡æ¶ˆæ¯æœ«å°¾
 	len -= alen;
 	src = ((char*)src) + alen;
 	pseg = &msg->next;
@@ -246,7 +245,7 @@ static struct msg_msg* load_msg(void* src, int len)
 		len -= alen;
 		src = ((char*)src) + alen;
 	}
-	// ·µ»ØÏûÏ¢Á´±íÍ·Ö¸Õë
+	// è¿”å›æ¶ˆæ¯é“¾è¡¨å¤´æŒ‡é’ˆ
 	return msg;
 
 out_err:
@@ -255,30 +254,30 @@ out_err:
 }
 
 /**
- * @brief ´æ´¢ÏûÏ¢£¨Á´±í£©
- * @param dest ÏûÏ¢´æ´¢µØÖ·
- * @param msg ÏûÏ¢
- * @param len ÏûÏ¢³¤¶È
+ * @brief å­˜å‚¨æ¶ˆæ¯ï¼ˆé“¾è¡¨ï¼‰
+ * @param dest æ¶ˆæ¯å­˜å‚¨åœ°å€
+ * @param msg æ¶ˆæ¯
+ * @param len æ¶ˆæ¯é•¿åº¦
  * 
  * @return 
- *      Èô³É¹¦£¬·µ»Ø0
- *      Èô´æ´¢ÏûÏ¢Ê§°Ü£¬·µ»Ø-1
+ *      è‹¥æˆåŠŸï¼Œè¿”å›0
+ *      è‹¥å­˜å‚¨æ¶ˆæ¯å¤±è´¥ï¼Œè¿”å›-1
  */
 static int store_msg(void* dest, struct msg_msg* msg, int len)
 {
 	int alen;
 	struct msg_msgseg* seg;
 
-	// ±ß½ç¼ì²â
+	// è¾¹ç•Œæ£€æµ‹
 	alen = len;
 	if (alen > DATALEN_MSG)
 		alen = DATALEN_MSG;
 
-	// ´æ´¢µÚÒ»ÌõÏûÏ¢
+	// å­˜å‚¨ç¬¬ä¸€æ¡æ¶ˆæ¯
 	if (copy_to_user(dest, msg + 1, alen))
 		return -1;
 
-	// ½«ºóÃæËùÓĞÏûÏ¢ÒÔÁ´±íĞÎÊ½Á¬½ÓÔÚµÚÒ»ÌõÏûÏ¢Ö®ºó´æ´¢
+	// å°†åé¢æ‰€æœ‰æ¶ˆæ¯ä»¥é“¾è¡¨å½¢å¼è¿æ¥åœ¨ç¬¬ä¸€æ¡æ¶ˆæ¯ä¹‹åå­˜å‚¨
 	len -= alen;
 	dest = ((char*)dest) + alen;
 	seg = msg->next;
@@ -296,9 +295,9 @@ static int store_msg(void* dest, struct msg_msg* msg, int len)
 }
 
 /**
- * @brief Ìí¼ÓÏûÏ¢·¢ËÍÕß
- * @param msq ÏûÏ¢¶ÓÁĞ
- * @param mss ÏûÏ¢·¢ËÍÕß
+ * @brief æ·»åŠ æ¶ˆæ¯å‘é€è€…
+ * @param msq æ¶ˆæ¯é˜Ÿåˆ—
+ * @param mss æ¶ˆæ¯å‘é€è€…
  */
 static inline void ss_add(struct msg_queue* msq, struct msg_sender* mss)
 {
@@ -308,8 +307,8 @@ static inline void ss_add(struct msg_queue* msq, struct msg_sender* mss)
 }
 
 /**
- * @brief É¾³ıÏûÏ¢·¢ËÍÕß
- * @param mss ÏûÏ¢·¢ËÍÕß
+ * @brief åˆ é™¤æ¶ˆæ¯å‘é€è€…
+ * @param mss æ¶ˆæ¯å‘é€è€…
  */
 static inline void ss_del(struct msg_sender* mss)
 {
@@ -318,15 +317,15 @@ static inline void ss_del(struct msg_sender* mss)
 }
 
 /**
- * @brief »½ĞÑÏûÏ¢·¢ËÍÕß
- * @param h ÏûÏ¢·¢ËÍÕßÁ´±íÍ·Ö¸Õë
+ * @brief å”¤é†’æ¶ˆæ¯å‘é€è€…
+ * @param h æ¶ˆæ¯å‘é€è€…é“¾è¡¨å¤´æŒ‡é’ˆ
  * @param kill [1] - ?; [0] - ?
  */
 static void ss_wakeup(struct list_head* h, int kill)
 {
 	struct list_head* tmp;
 
-	// ±éÀúËùÓĞÏûÏ¢·¢ËÍÕß½øĞĞ»½ĞÑ
+	// éå†æ‰€æœ‰æ¶ˆæ¯å‘é€è€…è¿›è¡Œå”¤é†’
 	tmp = h->next;
 	while (tmp != h) {
 		struct msg_sender* mss;
@@ -340,15 +339,15 @@ static void ss_wakeup(struct list_head* h, int kill)
 }
 
 /**
- * @brief Ê¹ËùÓĞÕıÔÚµÈ´ı´Ë¶ÓÁĞ½ÓÊÕÏûÏ¢µÄ½ø³Ì¶¼³ö´í·µ»Ø
- * @param msq ÏûÏ¢¶ÓÁĞ
- * @param res ´íÎó±êÊ¶·û£¨½«È«²¿ÏûÏ¢½ÓÊÕÕßµÄ½ÓÊÕÏûÏ¢ÖÃÎªÖ¸¶¨´íÎó£©
+ * @brief ä½¿æ‰€æœ‰æ­£åœ¨ç­‰å¾…æ­¤é˜Ÿåˆ—æ¥æ”¶æ¶ˆæ¯çš„è¿›ç¨‹éƒ½å‡ºé”™è¿”å›
+ * @param msq æ¶ˆæ¯é˜Ÿåˆ—
+ * @param res é”™è¯¯æ ‡è¯†ç¬¦ï¼ˆå°†å…¨éƒ¨æ¶ˆæ¯æ¥æ”¶è€…çš„æ¥æ”¶æ¶ˆæ¯ç½®ä¸ºæŒ‡å®šé”™è¯¯ï¼‰
  */
 static void expunge_all(struct msg_queue* msq, int res)
 {
 	struct list_head* tmp;
 
-	// ±éÀúÏûÏ¢¶ÓÁĞ½øĞĞÇå³ı¡¢ÖÃ´í²Ù×÷
+	// éå†æ¶ˆæ¯é˜Ÿåˆ—è¿›è¡Œæ¸…é™¤ã€ç½®é”™æ“ä½œ
 	tmp = msq->q_receivers.next;
 	while (tmp != &msq->q_receivers) {
 		struct msg_receiver* msr;
@@ -361,8 +360,8 @@ static void expunge_all(struct msg_queue* msq, int res)
 }
 
 /**
- * @brief ÊÍ·ÅÏûÏ¢¶ÓÁĞËùÕ¼×ÊÔ´
- * @param id ÏûÏ¢¶ÓÁĞid
+ * @brief é‡Šæ”¾æ¶ˆæ¯é˜Ÿåˆ—æ‰€å èµ„æº
+ * @param id æ¶ˆæ¯é˜Ÿåˆ—id
  */
 static void freeque(int id)
 {
@@ -371,12 +370,12 @@ static void freeque(int id)
 
 	msq = msg_rmid(id);
 
-	// Í£Ö¹ÏûÏ¢¶ÓÁĞÊÕ·¢ÏûÏ¢¡¢»½ĞÑ²¢½âËø
+	// åœæ­¢æ¶ˆæ¯é˜Ÿåˆ—æ”¶å‘æ¶ˆæ¯ã€å”¤é†’å¹¶è§£é”
 	expunge_all(msq, -EIDRM);
 	ss_wakeup(&msq->q_senders, 1);
 	msg_unlock(id);
 
-	// ±éÀúÏûÏ¢¶ÓÁĞÖĞµÄÏûÏ¢½øĞĞÊÍ·Å
+	// éå†æ¶ˆæ¯é˜Ÿåˆ—ä¸­çš„æ¶ˆæ¯è¿›è¡Œé‡Šæ”¾
 	tmp = msq->q_messages.next;
 	while (tmp != &msq->q_messages) {
 		struct msg_msg* msg = list_entry(tmp, struct msg_msg, m_list);
@@ -389,30 +388,30 @@ static void freeque(int id)
 }
 
 /**
- * @brief ÏµÍ³º¯Êı - »ñÈ¡Ö¸¶¨ÏûÏ¢¶ÓÁĞ£¬Èô¸ÃÏûÏ¢¶ÓÁĞ²»´æÔÚ£¬Ôò´´½¨Ò»¸öĞÂµÄÏûÏ¢¶ÓÁĞ
- * @param key ÏûÏ¢¶ÓÁĞ±êÊ¶·û
- * @param msgflg ÏûÏ¢¶ÓÁĞ²Ù×÷±êÊ¶·û
- *					IPC_CREAT£º´´½¨ĞÂµÄÏûÏ¢¶ÓÁĞ
- *					IPC_EXCL£ºÓëIPC_CREATÒ»Í¬Ê¹ÓÃ£¬±íÊ¾Èç¹ûÒª´´½¨µÄÏûÏ¢¶ÓÁĞÒÑ¾­´æÔÚ£¬Ôò·µ»Ø´íÎó¡¢
- *					IPC_NOWAIT£º¶ÁĞ´ÏûÏ¢¶ÓÁĞÒªÇóÎŞ·¨Âú×ãÊ±£¬²»×èÈû
+ * @brief ç³»ç»Ÿå‡½æ•° - è·å–æŒ‡å®šæ¶ˆæ¯é˜Ÿåˆ—ï¼Œè‹¥è¯¥æ¶ˆæ¯é˜Ÿåˆ—ä¸å­˜åœ¨ï¼Œåˆ™åˆ›å»ºä¸€ä¸ªæ–°çš„æ¶ˆæ¯é˜Ÿåˆ—
+ * @param key æ¶ˆæ¯é˜Ÿåˆ—æ ‡è¯†ç¬¦
+ * @param msgflg æ¶ˆæ¯é˜Ÿåˆ—æ“ä½œæ ‡è¯†ç¬¦
+ *					IPC_CREATï¼šåˆ›å»ºæ–°çš„æ¶ˆæ¯é˜Ÿåˆ—
+ *					IPC_EXCLï¼šä¸IPC_CREATä¸€åŒä½¿ç”¨ï¼Œè¡¨ç¤ºå¦‚æœè¦åˆ›å»ºçš„æ¶ˆæ¯é˜Ÿåˆ—å·²ç»å­˜åœ¨ï¼Œåˆ™è¿”å›é”™è¯¯ã€
+ *					IPC_NOWAITï¼šè¯»å†™æ¶ˆæ¯é˜Ÿåˆ—è¦æ±‚æ— æ³•æ»¡è¶³æ—¶ï¼Œä¸é˜»å¡
  * 
  * @return 
- *		Èô³É¹¦£¬·µ»ØÏûÏ¢¶ÓÁĞ±êÊ¶·û
- *      Èô´´½¨ĞÂÏûÏ¢¶ÓÁĞÊ§°Ü£¬·µ»Ø-2[-ENOENT = -2]
- *      ÈôÒª´´½¨µÄĞÂÏûÏ¢¶ÓÁĞÒÑ´æÔÚ£¬·µ»Ø-17[-EEXIST = -17]
- *      ÈôÎŞIPCÈ¨ÏŞ½øĞĞ²Ù	×÷£¬·µ»Ø-13[-EACCES = -13]
- *	    Èô²Ù×÷Ê§°Ü»ò·¢ÉúÆäËû´íÎó£¬·µ»Ø-1[-EPERM = -1]
+ *		è‹¥æˆåŠŸï¼Œè¿”å›æ¶ˆæ¯é˜Ÿåˆ—æ ‡è¯†ç¬¦
+ *      è‹¥åˆ›å»ºæ–°æ¶ˆæ¯é˜Ÿåˆ—å¤±è´¥ï¼Œè¿”å›-2[-ENOENT = -2]
+ *      è‹¥è¦åˆ›å»ºçš„æ–°æ¶ˆæ¯é˜Ÿåˆ—å·²å­˜åœ¨ï¼Œè¿”å›-17[-EEXIST = -17]
+ *      è‹¥æ— IPCæƒé™è¿›è¡Œæ“	ä½œï¼Œè¿”å›-13[-EACCES = -13]
+ *	    è‹¥æ“ä½œå¤±è´¥æˆ–å‘ç”Ÿå…¶ä»–é”™è¯¯ï¼Œè¿”å›-1[-EPERM = -1]
  */
 asmlinkage long sys_msgget(key_t key, int msgflg)
 {
 	int id, ret = -EPERM;
 	struct msg_queue* msq;
 
-	down(&msg_ids.sem); // ÇëÇóĞÅºÅÁ¿
-	if (key == IPC_PRIVATE) // ÓÃ»§Éè¶¨IPC_PRIVATEÊ±£¬ÎŞÌõ¼ş´´½¨Ò»¸öÏûÏ¢¶ÓÁĞ
+	down(&msg_ids.sem); // è¯·æ±‚ä¿¡å·é‡
+	if (key == IPC_PRIVATE) // ç”¨æˆ·è®¾å®šIPC_PRIVATEæ—¶ï¼Œæ— æ¡ä»¶åˆ›å»ºä¸€ä¸ªæ¶ˆæ¯é˜Ÿåˆ—
 		ret = newque(key, msgflg);
 
-	// ±ß½ç¡¢´íÎó¼ì²â£¬ÎŞ´íÎóÔò´´½¨ÏûÏ¢¶ÓÁĞ£¬ÓĞ´íÎóÔò·µ»Ø¶ÔÓ¦´íÎó
+	// è¾¹ç•Œã€é”™è¯¯æ£€æµ‹ï¼Œæ— é”™è¯¯åˆ™åˆ›å»ºæ¶ˆæ¯é˜Ÿåˆ—ï¼Œæœ‰é”™è¯¯åˆ™è¿”å›å¯¹åº”é”™è¯¯
 	else if ((id = ipc_findkey(&msg_ids, key)) == -1) {
 		if (!(msgflg & IPC_CREAT))
 			ret = -ENOENT;
@@ -432,26 +431,26 @@ asmlinkage long sys_msgget(key_t key, int msgflg)
 			ret = msg_buildid(id, msq->q_perm.seq);
 		msg_unlock(id);
 	}
-	up(&msg_ids.sem); // ¶ÔÇëÇóµÄĞÅºÅÁ¿½øĞĞ´¦Àí
+	up(&msg_ids.sem); // å¯¹è¯·æ±‚çš„ä¿¡å·é‡è¿›è¡Œå¤„ç†
 	return ret;
 }
 
 /**
- * @brief ½«È«²¿ÏûÏ¢¶ÓÁĞ·¢ËÍÖÁÓÃ»§¿Õ¼ä
- * @param buf Ä¿±êÓÃ»§¿Õ¼äµØÖ·
- * @param in ¹ÜÀíÏûÏ¢¶ÓÁĞ×Ü½á¹¹Ìå
- * @param version IPC°æ±¾ - IPC_64£ºĞÂ°æ±¾£¬Ö§³Ö32Î»UIDÒÔ¼°¸ü´óµÄÏûÏ¢µÈ		IPC_OLD£ºÀÏ°æ±¾£¬¼¸ºõ²»Ö§³Ö32Î»UID
+ * @brief å°†å…¨éƒ¨æ¶ˆæ¯é˜Ÿåˆ—å‘é€è‡³ç”¨æˆ·ç©ºé—´
+ * @param buf ç›®æ ‡ç”¨æˆ·ç©ºé—´åœ°å€
+ * @param in ç®¡ç†æ¶ˆæ¯é˜Ÿåˆ—æ€»ç»“æ„ä½“
+ * @param version IPCç‰ˆæœ¬ - IPC_64ï¼šæ–°ç‰ˆæœ¬ï¼Œæ”¯æŒ32ä½UIDä»¥åŠæ›´å¤§çš„æ¶ˆæ¯ç­‰		IPC_OLDï¼šè€ç‰ˆæœ¬ï¼Œå‡ ä¹ä¸æ”¯æŒ32ä½UID
  * 
  * @return 
- *		Èô³É¹¦£¬·µ»Ø0
- *		Èô·¢ËÍÊ§°Ü£¬·µ»Ø·¢ËÍÊ§°ÜµÄ×Ö½ÚÊı
- *		Èô²ÎÊı´íÎó£¬·µ»Ø-22[-EINVAL = -22]
+ *		è‹¥æˆåŠŸï¼Œè¿”å›0
+ *		è‹¥å‘é€å¤±è´¥ï¼Œè¿”å›å‘é€å¤±è´¥çš„å­—èŠ‚æ•°
+ *		è‹¥å‚æ•°é”™è¯¯ï¼Œè¿”å›-22[-EINVAL = -22]
  */
 static inline unsigned long copy_msqid_to_user(void* buf, struct msqid64_ds* in, int version)
 {
 	switch (version) {
 	case IPC_64:
-		// ·µ»ØÏûÏ¢¶ÓÁĞ·¢ËÍ½á¹û
+		// è¿”å›æ¶ˆæ¯é˜Ÿåˆ—å‘é€ç»“æœ
 		return copy_to_user(buf, in, sizeof(*in));
 	case IPC_OLD:
 	{
@@ -493,20 +492,20 @@ static inline unsigned long copy_msqid_to_user(void* buf, struct msqid64_ds* in,
 }
 
 /**
- * @brief ½á¹¹Ìå - ÓÃÓÚ½ÓÊÕ¹ÜÀíÏûÏ¢¶ÓÁĞ½á¹¹Ìå?
+ * @brief ç»“æ„ä½“ - ç”¨äºæ¥æ”¶ç®¡ç†æ¶ˆæ¯é˜Ÿåˆ—ç»“æ„ä½“?
  */
 struct msq_setbuf {
 	unsigned long	qbytes;		/* ? */
-	uid_t		uid;			/* ÓÃ»§ID */
-	gid_t		gid;			/* ÓÃ»§×éID */
-	mode_t		mode;			/* Ä£Ê½ */
+	uid_t		uid;			/* ç”¨æˆ·ID */
+	gid_t		gid;			/* ç”¨æˆ·ç»„ID */
+	mode_t		mode;			/* æ¨¡å¼ */
 };
 
 /**
- * @brief »ñÈ¡À´×ÔÓÃ»§¿Õ¼äµÄÈ«²¿ÏûÏ¢¶ÓÁĞ
- * @param out ¹ÜÀíÏûÏ¢¶ÓÁĞ×Ü½á¹¹Ìå
- * @param buf ÄÚºË¿Õ¼äÏûÏ¢¶ÓÁĞÔ´µØÖ·
- * @param version IPC°æ±¾ - IPC_64£ºĞÂ°æ±¾£¬Ö§³Ö32Î»UIDÒÔ¼°¸ü´óµÄÏûÏ¢µÈ		IPC_OLD£ºÀÏ°æ±¾£¬¼¸ºõ²»Ö§³Ö32Î»UID
+ * @brief è·å–æ¥è‡ªç”¨æˆ·ç©ºé—´çš„å…¨éƒ¨æ¶ˆæ¯é˜Ÿåˆ—
+ * @param out ç®¡ç†æ¶ˆæ¯é˜Ÿåˆ—æ€»ç»“æ„ä½“
+ * @param buf å†…æ ¸ç©ºé—´æ¶ˆæ¯é˜Ÿåˆ—æºåœ°å€
+ * @param version IPCç‰ˆæœ¬ - IPC_64ï¼šæ–°ç‰ˆæœ¬ï¼Œæ”¯æŒ32ä½UIDä»¥åŠæ›´å¤§çš„æ¶ˆæ¯ç­‰		IPC_OLDï¼šè€ç‰ˆæœ¬ï¼Œå‡ ä¹ä¸æ”¯æŒ32ä½UID
  */
 static inline unsigned long copy_msqid_from_user(struct msq_setbuf* out, void* buf, int version)
 {
@@ -518,7 +517,7 @@ static inline unsigned long copy_msqid_from_user(struct msq_setbuf* out, void* b
 		if (copy_from_user(&tbuf, buf, sizeof(tbuf)))
 			return -EFAULT;
 
-		// ³õÊ¼»¯ÊôĞÔ
+		// åˆå§‹åŒ–å±æ€§
 		out->qbytes = tbuf.msg_qbytes;
 		out->uid = tbuf.msg_perm.uid;
 		out->gid = tbuf.msg_perm.gid;
@@ -550,22 +549,22 @@ static inline unsigned long copy_msqid_from_user(struct msq_setbuf* out, void* b
 }
 
 /**
- * @brief »ñÈ¡ºÍÉèÖÃÏûÏ¢¶ÓÁĞµÄÊôĞÔ
- * @param msqid ÏûÏ¢¶ÓÁĞ±êÊ¶·û
- * @param cmd	IPC_STAT / MSG_STAT£º»ñµÃmsgidµÄÏûÏ¢¶ÓÁĞÍ·Êı¾İµ½bufÖĞ
- * 				IPC_SET£ºÉèÖÃÏûÏ¢¶ÓÁĞµÄÊôĞÔ
- *				IPC_INFO / MSG_INFO£ºÍ³¼ÆĞÅÏ¢
- *				IPC_RMID£ºÉ¾³ıÏûÏ¢¶ÓÁĞ
- * @param buf£ºÏûÏ¢¶ÓÁĞ¹ÜÀí½á¹¹Ìå£¬Çë²Î¼ûÏûÏ¢¶ÓÁĞÄÚºË½á¹¹ËµÃ÷²¿·Ö
+ * @brief è·å–å’Œè®¾ç½®æ¶ˆæ¯é˜Ÿåˆ—çš„å±æ€§
+ * @param msqid æ¶ˆæ¯é˜Ÿåˆ—æ ‡è¯†ç¬¦
+ * @param cmd	IPC_STAT / MSG_STATï¼šè·å¾—msgidçš„æ¶ˆæ¯é˜Ÿåˆ—å¤´æ•°æ®åˆ°bufä¸­
+ * 				IPC_SETï¼šè®¾ç½®æ¶ˆæ¯é˜Ÿåˆ—çš„å±æ€§
+ *				IPC_INFO / MSG_INFOï¼šç»Ÿè®¡ä¿¡æ¯
+ *				IPC_RMIDï¼šåˆ é™¤æ¶ˆæ¯é˜Ÿåˆ—
+ * @param bufï¼šæ¶ˆæ¯é˜Ÿåˆ—ç®¡ç†ç»“æ„ä½“ï¼Œè¯·å‚è§æ¶ˆæ¯é˜Ÿåˆ—å†…æ ¸ç»“æ„è¯´æ˜éƒ¨åˆ†
  *
  * @return 
- * 	Èô³É¹¦£¬·µ»Ø0
- * 	ÈôÊ§°Ü£¬·µ»Ø-
- *		EACCES£º²ÎÊıcmdÎªIPC_STAT£¬È´ÎŞÈ¨ÏŞ¶ÁÈ¡¸ÃÏûÏ¢¶ÓÁĞ
- * 		EFAULT£º²ÎÊıbufÖ¸ÏòÎŞĞ§µÄÄÚ´æµØÖ·
- * 		EIDRM£º±êÊ¶·ûÎªmsqidµÄÏûÏ¢¶ÓÁĞÒÑ±»É¾³ı
- * 		EINVAL£ºÎŞĞ§µÄ²ÎÊıcmd»òmsqid
- * 		EPERM£º²ÎÊıcmdÎªIPC_SET»òIPC_RMID£¬È´ÎŞ×ã¹»µÄÈ¨ÏŞÖ´ĞĞ
+ * 	è‹¥æˆåŠŸï¼Œè¿”å›0
+ * 	è‹¥å¤±è´¥ï¼Œè¿”å›-
+ *		EACCESï¼šå‚æ•°cmdä¸ºIPC_STATï¼Œå´æ— æƒé™è¯»å–è¯¥æ¶ˆæ¯é˜Ÿåˆ—
+ * 		EFAULTï¼šå‚æ•°bufæŒ‡å‘æ— æ•ˆçš„å†…å­˜åœ°å€
+ * 		EIDRMï¼šæ ‡è¯†ç¬¦ä¸ºmsqidçš„æ¶ˆæ¯é˜Ÿåˆ—å·²è¢«åˆ é™¤
+ * 		EINVALï¼šæ— æ•ˆçš„å‚æ•°cmdæˆ–msqid
+ * 		EPERMï¼šå‚æ•°cmdä¸ºIPC_SETæˆ–IPC_RMIDï¼Œå´æ— è¶³å¤Ÿçš„æƒé™æ‰§è¡Œ
  */
 asmlinkage long sys_msgctl(int msqid, int cmd, struct msqid_ds* buf)
 {
@@ -580,7 +579,7 @@ asmlinkage long sys_msgctl(int msqid, int cmd, struct msqid_ds* buf)
 	version = ipc_parse_version(&cmd);
 
 	switch (cmd) {
-	// INFO²Ù×÷
+	// INFOæ“ä½œ
 	case IPC_INFO:
 	case MSG_INFO:
 	{
@@ -594,14 +593,14 @@ asmlinkage long sys_msgctl(int msqid, int cmd, struct msqid_ds* buf)
 		 * to set all member fields.
 		 */
 
-		// ÉèÖÃ¡¢¶ÁÈ¡-ÊôĞÔ¡¢ĞÅÏ¢
+		// è®¾ç½®ã€è¯»å–-å±æ€§ã€ä¿¡æ¯
 		memset(&msginfo, 0, sizeof(msginfo));
 		msginfo.msgmni = msg_ctlmni;
 		msginfo.msgmax = msg_ctlmax;
 		msginfo.msgmnb = msg_ctlmnb;
 		msginfo.msgssz = MSGSSZ;
 		msginfo.msgseg = MSGSEG;
-		down(&msg_ids.sem); //ÇëÇóĞÅºÅÁ¿
+		down(&msg_ids.sem); //è¯·æ±‚ä¿¡å·é‡
 		if (cmd == MSG_INFO) {
 			msginfo.msgpool = msg_ids.in_use;
 			msginfo.msgmap = atomic_read(&msg_hdrs);
@@ -613,18 +612,18 @@ asmlinkage long sys_msgctl(int msqid, int cmd, struct msqid_ds* buf)
 			msginfo.msgtql = MSGTQL;
 		}
 		max_id = msg_ids.max_id;
-		up(&msg_ids.sem); // ¶ÔÇëÇóµÄĞÅºÅÁ¿½øĞĞ´¦Àí
+		up(&msg_ids.sem); // å¯¹è¯·æ±‚çš„ä¿¡å·é‡è¿›è¡Œå¤„ç†
 		if (copy_to_user(buf, &msginfo, sizeof(struct msginfo)))
 			return -EFAULT;
 		return (max_id < 0) ? 0 : max_id;
 	}
-	// STAT²Ù×÷
+	// STATæ“ä½œ
 	case MSG_STAT:
 	case IPC_STAT:
 	{
 		struct msqid64_ds tbuf;
 		int success_return;
-		// Òì³£¼ì²â
+		// å¼‚å¸¸æ£€æµ‹
 		if (!buf)
 			return -EFAULT;
 		if (cmd == MSG_STAT && msqid >= msg_ids.size)
@@ -632,7 +631,7 @@ asmlinkage long sys_msgctl(int msqid, int cmd, struct msqid_ds* buf)
 
 		memset(&tbuf, 0, sizeof(tbuf));
 
-		// ËøÏûÏ¢¶ÓÁĞ
+		// é”æ¶ˆæ¯é˜Ÿåˆ—
 		msq = msg_lock(msqid);
 		if (msq == NULL)
 			return -EINVAL;
@@ -643,14 +642,14 @@ asmlinkage long sys_msgctl(int msqid, int cmd, struct msqid_ds* buf)
 		else {
 			err = -EIDRM;
 			if (msg_checkid(msq, msqid))
-				goto out_unlock; // ½âËøÏûÏ¢¶ÓÁĞ²¢½áÊøº¯Êı
+				goto out_unlock; // è§£é”æ¶ˆæ¯é˜Ÿåˆ—å¹¶ç»“æŸå‡½æ•°
 			success_return = 0;
 		}
 		err = -EACCES;
 		if (ipcperms(&msq->q_perm, S_IRUGO))
 			goto out_unlock;
 
-		// ÏòÖ¸¶¨ÄÚ´æĞ´ÈëÏûÏ¢¶ÓÁĞÍ·Êı¾İ
+		// å‘æŒ‡å®šå†…å­˜å†™å…¥æ¶ˆæ¯é˜Ÿåˆ—å¤´æ•°æ®
 		kernel_to_ipc64_perm(&msq->q_perm, &tbuf.msg_perm);
 		tbuf.msg_stime = msq->q_stime;
 		tbuf.msg_rtime = msq->q_rtime;
@@ -665,7 +664,7 @@ asmlinkage long sys_msgctl(int msqid, int cmd, struct msqid_ds* buf)
 			return -EFAULT;
 		return success_return;
 	}
-	// SET²Ù×÷Òì³£¼ì²â
+	// SETæ“ä½œå¼‚å¸¸æ£€æµ‹
 	case IPC_SET:
 		if (!buf)
 			return -EFAULT;
@@ -701,7 +700,7 @@ asmlinkage long sys_msgctl(int msqid, int cmd, struct msqid_ds* buf)
 			goto out_unlock_up;
 		msq->q_qbytes = setbuf.qbytes;
 
-		// ÉèÖÃÏûÏ¢¶ÓÁĞÊôĞÔ
+		// è®¾ç½®æ¶ˆæ¯é˜Ÿåˆ—å±æ€§
 		ipcp->uid = setbuf.uid;
 		ipcp->gid = setbuf.gid;
 		ipcp->mode = (ipcp->mode & ~S_IRWXUGO) |
@@ -714,7 +713,7 @@ asmlinkage long sys_msgctl(int msqid, int cmd, struct msqid_ds* buf)
 		/* sleeping senders might be able to send
 		 * due to a larger queue size.
 		 */
-		ss_wakeup(&msq->q_senders, 0); //½«ËùÓĞÕıÔÚµÈ´ı´Ë¶ÓÁĞ·¢ËÍ±¨ÎÄµÄ½ø³Ì¶¼»½ĞÑ,½øĞĞĞÂÒ»ÂÖ³¢ÊÔ
+		ss_wakeup(&msq->q_senders, 0); //å°†æ‰€æœ‰æ­£åœ¨ç­‰å¾…æ­¤é˜Ÿåˆ—å‘é€æŠ¥æ–‡çš„è¿›ç¨‹éƒ½å”¤é†’,è¿›è¡Œæ–°ä¸€è½®å°è¯•
 		msg_unlock(msqid);
 		break;
 	}
@@ -735,18 +734,18 @@ out_unlock:
 }
 
 /**
- * @brief ±È½ÏÏûÏ¢Àà±ğ
- * @param msg ÏûÏ¢
- * @param type Óû±È½ÏµÄÏûÏ¢Àà±ğ
- * @param mode ÅĞ¶ÏÄ£Ê½
- *					SEARCH_ANY£ººã³É¹¦
- *					SEARCH_LESSEQUAL£ºÅĞ¶ÏÏûÏ¢µÄÀà±ğÊÇ·ñĞ¡ÓÚµÈÓÚÓû±È½ÏµÄÏûÏ¢Àà±ğ
- * 					SEARCH_EQUAL£ºÅĞ¶ÏÏûÏ¢µÄÀà±ğÊÇ·ñµÈÓÚÓû±È½ÏµÄÏûÏ¢Àà±ğ
- * 					SEARCH_NOTEQUAL£ºÅĞ¶ÏÏûÏ¢µÄÀà±ğÊÇ·ñ²»µÈÓÚÓû±È½ÏµÄÏûÏ¢Àà±ğ
+ * @brief æ¯”è¾ƒæ¶ˆæ¯ç±»åˆ«
+ * @param msg æ¶ˆæ¯
+ * @param type æ¬²æ¯”è¾ƒçš„æ¶ˆæ¯ç±»åˆ«
+ * @param mode åˆ¤æ–­æ¨¡å¼
+ *					SEARCH_ANYï¼šæ’æˆåŠŸ
+ *					SEARCH_LESSEQUALï¼šåˆ¤æ–­æ¶ˆæ¯çš„ç±»åˆ«æ˜¯å¦å°äºç­‰äºæ¬²æ¯”è¾ƒçš„æ¶ˆæ¯ç±»åˆ«
+ * 					SEARCH_EQUALï¼šåˆ¤æ–­æ¶ˆæ¯çš„ç±»åˆ«æ˜¯å¦ç­‰äºæ¬²æ¯”è¾ƒçš„æ¶ˆæ¯ç±»åˆ«
+ * 					SEARCH_NOTEQUALï¼šåˆ¤æ–­æ¶ˆæ¯çš„ç±»åˆ«æ˜¯å¦ä¸ç­‰äºæ¬²æ¯”è¾ƒçš„æ¶ˆæ¯ç±»åˆ«
  * 
  * @return 
- *		Èô³É¹¦£¬·µ»Ø1
- *		ÈôÊ§°Ü£¬·µ»Ø0
+ *		è‹¥æˆåŠŸï¼Œè¿”å›1
+ *		è‹¥å¤±è´¥ï¼Œè¿”å›0
  */
 static int testmsg(struct msg_msg* msg, long type, int mode)
 {
@@ -771,9 +770,9 @@ static int testmsg(struct msg_msg* msg, long type, int mode)
 }
 
 /**
- * @brief ÅĞ¶ÏÊÇ·ñÓĞÏà¹Ø½ø³ÌÕıÔÚ¶ÁÖ¸¶¨ÏûÏ¢¶ÓÁĞÖĞµÄÏûÏ¢
- * @param msq ÏûÏ¢¶ÓÁĞ
- * @param msg ÏûÏ¢
+ * @brief åˆ¤æ–­æ˜¯å¦æœ‰ç›¸å…³è¿›ç¨‹æ­£åœ¨è¯»æŒ‡å®šæ¶ˆæ¯é˜Ÿåˆ—ä¸­çš„æ¶ˆæ¯
+ * @param msq æ¶ˆæ¯é˜Ÿåˆ—
+ * @param msg æ¶ˆæ¯
  * 
  * @return 
  * 
@@ -782,18 +781,18 @@ int inline pipelined_send(struct msg_queue* msq, struct msg_msg* msg)
 {
 	struct list_head* tmp;
 
-	tmp = msq->q_receivers.next; // ¾Û¼¯ÕıÔÚË¯ÃßµÈ´ı½ÓÊÕµÄ¶Á½ø³Ì
-	while (tmp != &msq->q_receivers) { //Èç¹ûÓĞÕıÔÚË¯ÃßµÈ´ı½ÓÊÜµÄ¶ÁÏûÏ¢½ø³Ì
+	tmp = msq->q_receivers.next; // èšé›†æ­£åœ¨ç¡çœ ç­‰å¾…æ¥æ”¶çš„è¯»è¿›ç¨‹
+	while (tmp != &msq->q_receivers) { //å¦‚æœæœ‰æ­£åœ¨ç¡çœ ç­‰å¾…æ¥å—çš„è¯»æ¶ˆæ¯è¿›ç¨‹
 		struct msg_receiver* msr;
 		msr = list_entry(tmp, struct msg_receiver, r_list);
 		tmp = tmp->next;
-		if (testmsg(msg, msr->r_msgtype, msr->r_mode)) { //ÀàĞÍÊÇ·ñÆ¥Åä
+		if (testmsg(msg, msr->r_msgtype, msr->r_mode)) { //ç±»å‹æ˜¯å¦åŒ¹é…
 			list_del(&msr->r_list);
-			if (msr->r_maxsize < msg->m_ts) { // ¶ÁµÄ»º³åÇøÊÇ·ñ¹»ÓÃ
+			if (msr->r_maxsize < msg->m_ts) { // è¯»çš„ç¼“å†²åŒºæ˜¯å¦å¤Ÿç”¨
 				msr->r_msg = ERR_PTR(-E2BIG);
-				wake_up_process(msr->r_tsk); // ²»¹»ÓÃÔò»½ĞÑ½ø³Ì
+				wake_up_process(msr->r_tsk); // ä¸å¤Ÿç”¨åˆ™å”¤é†’è¿›ç¨‹
 			}
-			else { // ¹»ÓÃÔò¶ÁÈ¡
+			else { // å¤Ÿç”¨åˆ™è¯»å–
 				msr->r_msg = msg;
 				msq->q_lrpid = msr->r_tsk->pid;
 				msq->q_rtime = CURRENT_TIME;
@@ -806,22 +805,22 @@ int inline pipelined_send(struct msg_queue* msq, struct msg_msg* msg)
 }
 
 /**
- * @brief ½«msgpÏûÏ¢Ğ´Èëµ½±êÊ¶·ûÎªmsqidµÄÏûÏ¢¶ÓÁĞ
- * @param msqid ÏûÏ¢¶ÓÁĞ±êÊ¶·û
- * @param msgp ·¢ËÍ¸ø¶ÓÁĞµÄÏûÏ¢
- * @param msgsz Òª·¢ËÍÏûÏ¢µÄ´óĞ¡£¬²»º¬ÏûÏ¢ÀàĞÍÕ¼ÓÃµÄ4¸ö×Ö½Ú,¼´mtextµÄ³¤¶È
- * @param msgflg ÈôÎª0£ºµ±ÏûÏ¢¶ÓÁĞÂúÊ±£¬msgsnd½«»á×èÈû£¬Ö±µ½ÏûÏ¢ÄÜĞ´½øÏûÏ¢¶ÓÁĞ
- * 			  ÈôÎªIPC_NOWAIT£ºµ±ÏûÏ¢¶ÓÁĞÒÑÂúµÄÊ±ºò£¬msgsndº¯Êı²»µÈ´ıÁ¢¼´·µ»Ø
- * 			  ÈôÎªIPC_NOERROR£ºÈô·¢ËÍµÄÏûÏ¢´óÓÚsize×Ö½Ú£¬Ôò°Ñ¸ÃÏûÏ¢½Ø¶Ï£¬½Ø¶Ï²¿·Ö½«±»¶ªÆú£¬ÇÒ²»Í¨Öª·¢ËÍ½ø³Ì¡£
+ * @brief å°†msgpæ¶ˆæ¯å†™å…¥åˆ°æ ‡è¯†ç¬¦ä¸ºmsqidçš„æ¶ˆæ¯é˜Ÿåˆ—
+ * @param msqid æ¶ˆæ¯é˜Ÿåˆ—æ ‡è¯†ç¬¦
+ * @param msgp å‘é€ç»™é˜Ÿåˆ—çš„æ¶ˆæ¯
+ * @param msgsz è¦å‘é€æ¶ˆæ¯çš„å¤§å°ï¼Œä¸å«æ¶ˆæ¯ç±»å‹å ç”¨çš„4ä¸ªå­—èŠ‚,å³mtextçš„é•¿åº¦
+ * @param msgflg è‹¥ä¸º0ï¼šå½“æ¶ˆæ¯é˜Ÿåˆ—æ»¡æ—¶ï¼Œmsgsndå°†ä¼šé˜»å¡ï¼Œç›´åˆ°æ¶ˆæ¯èƒ½å†™è¿›æ¶ˆæ¯é˜Ÿåˆ—
+ * 			  è‹¥ä¸ºIPC_NOWAITï¼šå½“æ¶ˆæ¯é˜Ÿåˆ—å·²æ»¡çš„æ—¶å€™ï¼Œmsgsndå‡½æ•°ä¸ç­‰å¾…ç«‹å³è¿”å›
+ * 			  è‹¥ä¸ºIPC_NOERRORï¼šè‹¥å‘é€çš„æ¶ˆæ¯å¤§äºsizeå­—èŠ‚ï¼Œåˆ™æŠŠè¯¥æ¶ˆæ¯æˆªæ–­ï¼Œæˆªæ–­éƒ¨åˆ†å°†è¢«ä¸¢å¼ƒï¼Œä¸”ä¸é€šçŸ¥å‘é€è¿›ç¨‹ã€‚
  * @return
- *		Èô³É¹¦£¬·µ»Ø0
- *		ÈôÊ§°Ü£¬·µ»Ø-
- * 			EAGAIN£º²ÎÊımsgflg ÉèÎªIPC_NOWAIT£¬¶øÏûÏ¢¶ÓÁĞÒÑÂú
- * 			EIDRM£º±êÊ¶·ûÎªmsqidµÄÏûÏ¢¶ÓÁĞÒÑ±»É¾³ı
- * 			EACCES£ºÎŞÈ¨ÏŞĞ´ÈëÏûÏ¢¶ÓÁĞ
- * 			EFAULT£º²ÎÊımsgpÖ¸ÏòÎŞĞ§µÄÄÚ´æµØÖ·
- * 			EINTR£º¶ÓÁĞÒÑÂú¶ø´¦ÓÚµÈ´ıÇé¿öÏÂ±»ĞÅºÅÖĞ¶Ï
- * 			EINVAL£ºÎŞĞ§µÄ²ÎÊımsqid¡¢msgsz»ò²ÎÊıÏûÏ¢ÀàĞÍtypeĞ¡ÓÚ0
+ *		è‹¥æˆåŠŸï¼Œè¿”å›0
+ *		è‹¥å¤±è´¥ï¼Œè¿”å›-
+ * 			EAGAINï¼šå‚æ•°msgflg è®¾ä¸ºIPC_NOWAITï¼Œè€Œæ¶ˆæ¯é˜Ÿåˆ—å·²æ»¡
+ * 			EIDRMï¼šæ ‡è¯†ç¬¦ä¸ºmsqidçš„æ¶ˆæ¯é˜Ÿåˆ—å·²è¢«åˆ é™¤
+ * 			EACCESï¼šæ— æƒé™å†™å…¥æ¶ˆæ¯é˜Ÿåˆ—
+ * 			EFAULTï¼šå‚æ•°msgpæŒ‡å‘æ— æ•ˆçš„å†…å­˜åœ°å€
+ * 			EINTRï¼šé˜Ÿåˆ—å·²æ»¡è€Œå¤„äºç­‰å¾…æƒ…å†µä¸‹è¢«ä¿¡å·ä¸­æ–­
+ * 			EINVALï¼šæ— æ•ˆçš„å‚æ•°msqidã€msgszæˆ–å‚æ•°æ¶ˆæ¯ç±»å‹typeå°äº0
  */
 asmlinkage long sys_msgsnd(int msqid, struct msgbuf* msgp, size_t msgsz, int msgflg)
 {
@@ -830,7 +829,7 @@ asmlinkage long sys_msgsnd(int msqid, struct msgbuf* msgp, size_t msgsz, int msg
 	long mtype;
 	int err;
 
-	// ±ß½ç¡¢Òì³£¼ì²â
+	// è¾¹ç•Œã€å¼‚å¸¸æ£€æµ‹
 	if (msgsz > msg_ctlmax || (long)msgsz < 0 || msqid < 0)
 		return -EINVAL;
 	if (get_user(mtype, &msgp->mtype))
@@ -838,18 +837,18 @@ asmlinkage long sys_msgsnd(int msqid, struct msgbuf* msgp, size_t msgsz, int msg
 	if (mtype < 1)
 		return -EINVAL;
 
-	msg = load_msg(msgp->mtext, msgsz); // ·ÖÅäÄÚ´æ»º³åÇø±£´æÏûÏ¢
+	msg = load_msg(msgp->mtext, msgsz); // åˆ†é…å†…å­˜ç¼“å†²åŒºä¿å­˜æ¶ˆæ¯
 	if (IS_ERR(msg))
 		return PTR_ERR(msg);
 
 	msg->m_type = mtype;
 	msg->m_ts = msgsz;
 
-	msq = msg_lock(msqid); //¸ù¾İ¸ø¶¨µÄÏûÏ¢ÕÒµ½ÏàÓ¦µÄÏûÏ¢¶ÓÁĞ,½«ÆäÉÏËø
+	msq = msg_lock(msqid); //æ ¹æ®ç»™å®šçš„æ¶ˆæ¯æ‰¾åˆ°ç›¸åº”çš„æ¶ˆæ¯é˜Ÿåˆ—,å°†å…¶ä¸Šé”
 	err = -EINVAL;
 	if (msq == NULL)
 		goto out_free;
-// ÖØÊÔ
+// é‡è¯•
 retry:
 	err = -EIDRM;
 	if (msg_checkid(msq, msqid))
@@ -867,16 +866,16 @@ retry:
 			err = -EAGAIN;
 			goto out_unlock_free;
 		}
-		ss_add(msq, &s); // ¹ÒÔØµ½ÏûÏ¢¶ÓÁĞq_senderÁ´,ÕâÑù¿ÉÒÔÍ¨¹ı´ËÁ´ÕÒµ½ĞİÃßÕıÔÚµÈ´ı·¢ËÍµÄ½ø³Ì
+		ss_add(msq, &s); // æŒ‚è½½åˆ°æ¶ˆæ¯é˜Ÿåˆ—q_senderé“¾,è¿™æ ·å¯ä»¥é€šè¿‡æ­¤é“¾æ‰¾åˆ°ä¼‘çœ æ­£åœ¨ç­‰å¾…å‘é€çš„è¿›ç¨‹
 		msg_unlock(msqid);
-		schedule(); // µ÷¶È
+		schedule(); // è°ƒåº¦
 		current->state = TASK_RUNNING;
 
 		msq = msg_lock(msqid);
 		err = -EIDRM;
 		if (msq == NULL)
 			goto out_free;
-		ss_del(&s); // É¾³ı
+		ss_del(&s); // åˆ é™¤
 
 		if (signal_pending(current)) {
 			err = -EINTR;
@@ -888,7 +887,7 @@ retry:
 	msq->q_lspid = current->pid;
 	msq->q_stime = CURRENT_TIME;
 
-	if (!pipelined_send(msq, msg)) { // Èç¹ûÎŞÏà¹Ø½ø³ÌÕıÔÚ¶ÁÕâ¸öÏûÏ¢£¬Ôò·ÅÈë¶ÓÁĞ
+	if (!pipelined_send(msq, msg)) { // å¦‚æœæ— ç›¸å…³è¿›ç¨‹æ­£åœ¨è¯»è¿™ä¸ªæ¶ˆæ¯ï¼Œåˆ™æ”¾å…¥é˜Ÿåˆ—
 		list_add_tail(&msg->m_list, &msq->q_messages);
 		msq->q_cbytes += msgsz;
 		msq->q_qnum++;
@@ -908,18 +907,18 @@ out_free:
 }
 
 /**
- * @brief Ä£Ê½×ª»»
- * @param msgtyp ÏûÏ¢Àà±ğ
- *					Èô=0£º½ÓÊÕµÚÒ»¸öÏûÏ¢
- *					Èô>0£º½ÓÊÕÀàĞÍµÈÓÚmsgtypµÄµÚÒ»¸öÏûÏ¢
- *					Èô<0£º½ÓÊÕÀàĞÍµÈÓÚ»òÕßĞ¡ÓÚmsgtyp¾ø¶ÔÖµµÄµÚÒ»¸öÏûÏ¢
- * @param msgflg ±êÊ¶·û - MSG_EXCEPT
+ * @brief æ¨¡å¼è½¬æ¢
+ * @param msgtyp æ¶ˆæ¯ç±»åˆ«
+ *					è‹¥=0ï¼šæ¥æ”¶ç¬¬ä¸€ä¸ªæ¶ˆæ¯
+ *					è‹¥>0ï¼šæ¥æ”¶ç±»å‹ç­‰äºmsgtypçš„ç¬¬ä¸€ä¸ªæ¶ˆæ¯
+ *					è‹¥<0ï¼šæ¥æ”¶ç±»å‹ç­‰äºæˆ–è€…å°äºmsgtypç»å¯¹å€¼çš„ç¬¬ä¸€ä¸ªæ¶ˆæ¯
+ * @param msgflg æ ‡è¯†ç¬¦ - MSG_EXCEPT
  * 
  * @return 
- *		ÈômsgtypµÈÓÚ0£¬·µ»ØSEARCH_ANY
- *		ÈômsgtypĞ¡ÓÚ0£¬·µ»ØSEARCH_LESSEQUAL
- *		Èômsgtyp´óÓÚ0£¬ÇÒmsgflgÎªMSG_EXCEPT£¬·µ»ØSEARCH_NOTEQUAL
- *		Èômsgtyp´óÓÚ0£¬ÇÒmsgflg²»ÎªMSG_EXCEPT£¬·µ»ØSEARCH_EQUAL
+ *		è‹¥msgtypç­‰äº0ï¼Œè¿”å›SEARCH_ANY
+ *		è‹¥msgtypå°äº0ï¼Œè¿”å›SEARCH_LESSEQUAL
+ *		è‹¥msgtypå¤§äº0ï¼Œä¸”msgflgä¸ºMSG_EXCEPTï¼Œè¿”å›SEARCH_NOTEQUAL
+ *		è‹¥msgtypå¤§äº0ï¼Œä¸”msgflgä¸ä¸ºMSG_EXCEPTï¼Œè¿”å›SEARCH_EQUAL
  */
 int inline convert_mode(long* msgtyp, int msgflg)
 {
@@ -941,28 +940,28 @@ int inline convert_mode(long* msgtyp, int msgflg)
 }
 
 /**
- * @brief ´Ó±êÊ¶·ûÎªmsqidµÄÏûÏ¢¶ÓÁĞ¶ÁÈ¡ÏûÏ¢²¢´æÓÚmsgpÖĞ£¬¶ÁÈ¡ºó°Ñ´ËÏûÏ¢´ÓÏûÏ¢¶ÓÁĞÖĞÉ¾³ı
- * @param msqid ÏûÏ¢¶ÓÁĞ±êÊ¶·û
- * @param msgp ´æ·ÅÏûÏ¢µÄ½á¹¹Ìå£¬½á¹¹ÌåÀàĞÍÒªÓëmsgsndº¯Êı·¢ËÍµÄÀàĞÍÏàÍ¬
- * @param msgsz Òª½ÓÊÕÏûÏ¢µÄ´óĞ¡£¬²»º¬ÏûÏ¢ÀàĞÍÕ¼ÓÃµÄ4¸ö×Ö½Ú
- * @param msgtyp Èô=0£º½ÓÊÕµÚÒ»¸öÏûÏ¢
- * 			  Èô>0£º½ÓÊÕÀàĞÍµÈÓÚmsgtypµÄµÚÒ»¸öÏûÏ¢
- * 			  Èô<0£º½ÓÊÕÀàĞÍµÈÓÚ»òÕßĞ¡ÓÚmsgtyp¾ø¶ÔÖµµÄµÚÒ»¸öÏûÏ¢
- * @param msgflg ÈôÎª0: ×èÈûÊ½½ÓÊÕÏûÏ¢£¬Ã»ÓĞ¸ÃÀàĞÍµÄÏûÏ¢msgrcvº¯ÊıÒ»Ö±×èÈûµÈ´ı
- * 			  ÈôÎªIPC_NOWAIT£ºÈç¹ûÃ»ÓĞ·µ»ØÌõ¼şµÄÏûÏ¢µ÷ÓÃÁ¢¼´·µ»Ø£¬´ËÊ±´íÎóÂëÎªENOMSG
- * 			  ÈôÎªIPC_EXCEPT£ºÓëmsgtypeÅäºÏÊ¹ÓÃ·µ»Ø¶ÓÁĞÖĞµÚÒ»¸öÀàĞÍ²»ÎªmsgtypeµÄÏûÏ¢
- * 			  ÈôÎªIPC_NOERROR£ºÈç¹û¶ÓÁĞÖĞÂú×ãÌõ¼şµÄÏûÏ¢ÄÚÈİ´óÓÚËùÇëÇóµÄsize×Ö½Ú£¬Ôò°Ñ¸ÃÏûÏ¢½Ø¶Ï£¬½Ø¶Ï²¿·Ö½«±»¶ªÆú
+ * @brief ä»æ ‡è¯†ç¬¦ä¸ºmsqidçš„æ¶ˆæ¯é˜Ÿåˆ—è¯»å–æ¶ˆæ¯å¹¶å­˜äºmsgpä¸­ï¼Œè¯»å–åæŠŠæ­¤æ¶ˆæ¯ä»æ¶ˆæ¯é˜Ÿåˆ—ä¸­åˆ é™¤
+ * @param msqid æ¶ˆæ¯é˜Ÿåˆ—æ ‡è¯†ç¬¦
+ * @param msgp å­˜æ”¾æ¶ˆæ¯çš„ç»“æ„ä½“ï¼Œç»“æ„ä½“ç±»å‹è¦ä¸msgsndå‡½æ•°å‘é€çš„ç±»å‹ç›¸åŒ
+ * @param msgsz è¦æ¥æ”¶æ¶ˆæ¯çš„å¤§å°ï¼Œä¸å«æ¶ˆæ¯ç±»å‹å ç”¨çš„4ä¸ªå­—èŠ‚
+ * @param msgtyp è‹¥=0ï¼šæ¥æ”¶ç¬¬ä¸€ä¸ªæ¶ˆæ¯
+ * 			  è‹¥>0ï¼šæ¥æ”¶ç±»å‹ç­‰äºmsgtypçš„ç¬¬ä¸€ä¸ªæ¶ˆæ¯
+ * 			  è‹¥<0ï¼šæ¥æ”¶ç±»å‹ç­‰äºæˆ–è€…å°äºmsgtypç»å¯¹å€¼çš„ç¬¬ä¸€ä¸ªæ¶ˆæ¯
+ * @param msgflg è‹¥ä¸º0: é˜»å¡å¼æ¥æ”¶æ¶ˆæ¯ï¼Œæ²¡æœ‰è¯¥ç±»å‹çš„æ¶ˆæ¯msgrcvå‡½æ•°ä¸€ç›´é˜»å¡ç­‰å¾…
+ * 			  è‹¥ä¸ºIPC_NOWAITï¼šå¦‚æœæ²¡æœ‰è¿”å›æ¡ä»¶çš„æ¶ˆæ¯è°ƒç”¨ç«‹å³è¿”å›ï¼Œæ­¤æ—¶é”™è¯¯ç ä¸ºENOMSG
+ * 			  è‹¥ä¸ºIPC_EXCEPTï¼šä¸msgtypeé…åˆä½¿ç”¨è¿”å›é˜Ÿåˆ—ä¸­ç¬¬ä¸€ä¸ªç±»å‹ä¸ä¸ºmsgtypeçš„æ¶ˆæ¯
+ * 			  è‹¥ä¸ºIPC_NOERRORï¼šå¦‚æœé˜Ÿåˆ—ä¸­æ»¡è¶³æ¡ä»¶çš„æ¶ˆæ¯å†…å®¹å¤§äºæ‰€è¯·æ±‚çš„sizeå­—èŠ‚ï¼Œåˆ™æŠŠè¯¥æ¶ˆæ¯æˆªæ–­ï¼Œæˆªæ–­éƒ¨åˆ†å°†è¢«ä¸¢å¼ƒ
  *
  * @return 
- * 	Èô³É¹¦£¬Ôò·µ»ØÊµ¼Ê¶ÁÈ¡µ½µÄÏûÏ¢Êı¾İ³¤¶È
- * 	ÈôÊ§°Ü£¬·µ»Ø-
- * 		EINVAL£ºÏûÏ¢³¤¶ÈÖµÔ½½ç
- * 		E2BIG£ºÏûÏ¢Êı¾İ³¤¶È´óÓÚmsgsz¶ømsgflagÃ»ÓĞÉèÖÃIPC_NOERROR
- * 		EIDRM£º±êÊ¶·ûÎªmsqidµÄÏûÏ¢¶ÓÁĞÒÑ±»É¾³ı
- * 		EACCES£ºÎŞÈ¨ÏŞ¶ÁÈ¡¸ÃÏûÏ¢¶ÓÁĞ
- * 		EFAULT£º²ÎÊımsgpÖ¸ÏòÎŞĞ§µÄÄÚ´æµØÖ·
- * 		ENOMSG£º²ÎÊımsgflgÉèÎªIPC_NOWAIT£¬¶øÏûÏ¢¶ÓÁĞÖĞÎŞÏûÏ¢¿É¶Á
- * 		EINTR£ºµÈ´ı¶ÁÈ¡¶ÓÁĞÄÚµÄÏûÏ¢Çé¿öÏÂ±»ĞÅºÅÖĞ¶Ï
+ * 	è‹¥æˆåŠŸï¼Œåˆ™è¿”å›å®é™…è¯»å–åˆ°çš„æ¶ˆæ¯æ•°æ®é•¿åº¦
+ * 	è‹¥å¤±è´¥ï¼Œè¿”å›-
+ * 		EINVALï¼šæ¶ˆæ¯é•¿åº¦å€¼è¶Šç•Œ
+ * 		E2BIGï¼šæ¶ˆæ¯æ•°æ®é•¿åº¦å¤§äºmsgszè€Œmsgflagæ²¡æœ‰è®¾ç½®IPC_NOERROR
+ * 		EIDRMï¼šæ ‡è¯†ç¬¦ä¸ºmsqidçš„æ¶ˆæ¯é˜Ÿåˆ—å·²è¢«åˆ é™¤
+ * 		EACCESï¼šæ— æƒé™è¯»å–è¯¥æ¶ˆæ¯é˜Ÿåˆ—
+ * 		EFAULTï¼šå‚æ•°msgpæŒ‡å‘æ— æ•ˆçš„å†…å­˜åœ°å€
+ * 		ENOMSGï¼šå‚æ•°msgflgè®¾ä¸ºIPC_NOWAITï¼Œè€Œæ¶ˆæ¯é˜Ÿåˆ—ä¸­æ— æ¶ˆæ¯å¯è¯»
+ * 		EINTRï¼šç­‰å¾…è¯»å–é˜Ÿåˆ—å†…çš„æ¶ˆæ¯æƒ…å†µä¸‹è¢«ä¿¡å·ä¸­æ–­
  */
 asmlinkage long sys_msgrcv(int msqid, struct msgbuf* msgp, size_t msgsz,
 	long msgtyp, int msgflg)
@@ -974,15 +973,15 @@ asmlinkage long sys_msgrcv(int msqid, struct msgbuf* msgp, size_t msgsz,
 	int err;
 	int mode;
 
-	// Òì³£¼ì²â
+	// å¼‚å¸¸æ£€æµ‹
 	if (msqid < 0 || (long)msgsz < 0)
 		return -EINVAL;
 	mode = convert_mode(&msgtyp, msgflg);
 
-	msq = msg_lock(msqid); // ÕÒµ½²¢ËøÖ¸¶¨ÏûÏ¢¶ÓÁĞ
+	msq = msg_lock(msqid); // æ‰¾åˆ°å¹¶é”æŒ‡å®šæ¶ˆæ¯é˜Ÿåˆ—
 	if (msq == NULL)
 		return -EINVAL;
-// ÖØÊÔ
+// é‡è¯•
 retry:
 	err = -EIDRM;
 	if (msg_checkid(msq, msqid))
@@ -999,8 +998,8 @@ retry:
 		if (testmsg(msg, msgtyp, mode)) {
 			found_msg = msg;
 			if (mode == SEARCH_LESSEQUAL && msg->m_type != 1) {
-				found_msg = msg; // ²éÕÒµ½ÁËÏûÏ¢
-				msgtyp = msg->m_type - 1; // ½«type¼õµ½±ÈÕâ¸öÏûÏ¢µÄÀàĞÍÖµ¸üĞ¡£¬¿´ÄÜ·ñÕÒµ½¸üĞ¡µÄ
+				found_msg = msg; // æŸ¥æ‰¾åˆ°äº†æ¶ˆæ¯
+				msgtyp = msg->m_type - 1; // å°†typeå‡åˆ°æ¯”è¿™ä¸ªæ¶ˆæ¯çš„ç±»å‹å€¼æ›´å°ï¼Œçœ‹èƒ½å¦æ‰¾åˆ°æ›´å°çš„
 			}
 			else {
 				found_msg = msg;
@@ -1015,25 +1014,25 @@ retry:
 			err = -E2BIG;
 			goto out_unlock;
 		}
-		list_del(&msg->m_list); // ½«¸ÃÏûÏ¢´Ó¶ÓÁĞÖĞÉ¾³ı
+		list_del(&msg->m_list); // å°†è¯¥æ¶ˆæ¯ä»é˜Ÿåˆ—ä¸­åˆ é™¤
 		msq->q_qnum--;
 		msq->q_rtime = CURRENT_TIME;
 		msq->q_lrpid = current->pid;
 		msq->q_cbytes -= msg->m_ts;
 		atomic_sub(msg->m_ts, &msg_bytes);
 		atomic_dec(&msg_hdrs);
-		ss_wakeup(&msq->q_senders, 0); // È¡³öÏûÏ¢ºó£¬½«·¢ËÍµÄË¯ÃßµÈ´ı½ø³ÌÈ«²¿»½ĞÑ
-		msg_unlock(msqid); // ½âËøÏûÏ¢¶ÓÁĞ
+		ss_wakeup(&msq->q_senders, 0); // å–å‡ºæ¶ˆæ¯åï¼Œå°†å‘é€çš„ç¡çœ ç­‰å¾…è¿›ç¨‹å…¨éƒ¨å”¤é†’
+		msg_unlock(msqid); // è§£é”æ¶ˆæ¯é˜Ÿåˆ—
 out_success:
 		msgsz = (msgsz > msg->m_ts) ? msg->m_ts : msgsz;
 		if (put_user(msg->m_type, &msgp->mtype) ||
-			store_msg(msgp->mtext, msg, msgsz)) { // Êµ¼Ê½ÓÊÕµÄÏûÏ¢ÀàĞÍ£¬Í¨¹ıput_userËÍ»ØÓÃ»§¿Õ¼ä²¢´æ´¢
+			store_msg(msgp->mtext, msg, msgsz)) { // å®é™…æ¥æ”¶çš„æ¶ˆæ¯ç±»å‹ï¼Œé€šè¿‡put_useré€å›ç”¨æˆ·ç©ºé—´å¹¶å­˜å‚¨
 			msgsz = -EFAULT;
 		}
-		free_msg(msg); // ÊÍ·ÅÄÚºË¿Õ¼äÄÚ´æ
+		free_msg(msg); // é‡Šæ”¾å†…æ ¸ç©ºé—´å†…å­˜
 		return msgsz;
 	}
-	// ÏûÏ¢¶ÓÁĞ»¹Ã»ÓĞÏûÏ¢¿É¹©½ÓÊÕ
+	// æ¶ˆæ¯é˜Ÿåˆ—è¿˜æ²¡æœ‰æ¶ˆæ¯å¯ä¾›æ¥æ”¶
 	else
 	{
 		struct msg_queue* t;
@@ -1056,7 +1055,7 @@ out_success:
 		current->state = TASK_INTERRUPTIBLE;
 		msg_unlock(msqid);
 
-		// µ±Ç°½ø³ÌÒ»µ©Ë¯Ãß£¬ÒÔÏÂĞèÒªµÈ´ı½ø³ÌÍ¨¹ıpipelined_send()ÏòÆä·¢ËÍÏûÏ¢£¬²¢ÇÒÑ¡ÔñÕâ¸ö½ø³Ì×÷Îª½ÓÊÕ½ø³Ì²Å»á±»»½ĞÑ
+		// å½“å‰è¿›ç¨‹ä¸€æ—¦ç¡çœ ï¼Œä»¥ä¸‹éœ€è¦ç­‰å¾…è¿›ç¨‹é€šè¿‡pipelined_send()å‘å…¶å‘é€æ¶ˆæ¯ï¼Œå¹¶ä¸”é€‰æ‹©è¿™ä¸ªè¿›ç¨‹ä½œä¸ºæ¥æ”¶è¿›ç¨‹æ‰ä¼šè¢«å”¤é†’
 		schedule();
 		current->state = TASK_RUNNING;
 
@@ -1064,22 +1063,22 @@ out_success:
 		if (!IS_ERR(msg))
 			goto out_success;
 
-		// ÒÔÏÂÊÇÒòÎª»º³åÇøÌ«Ğ¡£¬»½ĞÑÁËË¯Ãß½ø³ÌÒÀ¾ÉÎŞ·¨½ÓÊÕ£¬¶øÊÇ±»ĞÅºÅ»½ĞÑµÄ´íÎó´¦Àí
-		t = msg_lock(msqid); // ¶ÔÏûÏ¢¼ÓËø£¬Òş²Ø×ÅµÈ´ı£¬¿ÉÄÜ±»ÆäËû½ø³ÌÇÀÏÈËø×¡¸Ã¶ÓÁĞ
+		// ä»¥ä¸‹æ˜¯å› ä¸ºç¼“å†²åŒºå¤ªå°ï¼Œå”¤é†’äº†ç¡çœ è¿›ç¨‹ä¾æ—§æ— æ³•æ¥æ”¶ï¼Œè€Œæ˜¯è¢«ä¿¡å·å”¤é†’çš„é”™è¯¯å¤„ç†
+		t = msg_lock(msqid); // å¯¹æ¶ˆæ¯åŠ é”ï¼Œéšè—ç€ç­‰å¾…ï¼Œå¯èƒ½è¢«å…¶ä»–è¿›ç¨‹æŠ¢å…ˆé”ä½è¯¥é˜Ÿåˆ—
 		if (t == NULL)
 			msqid = -1;
 		msg = (struct msg_msg*)msr_d.r_msg;
-		// ÔÚËø×¡¶ÓÁĞÖ®Ç°,»¹ÓĞ¿ÉÄÜ½ÓÊÕµ½ÆäËû½ø³Ìpipelined_send·¢À´µÄ±¨ÎÄ
+		// åœ¨é”ä½é˜Ÿåˆ—ä¹‹å‰,è¿˜æœ‰å¯èƒ½æ¥æ”¶åˆ°å…¶ä»–è¿›ç¨‹pipelined_sendå‘æ¥çš„æŠ¥æ–‡
 		if (!IS_ERR(msg)) {
 			/* our message arived while we waited for
 			 * the spinlock. Process it.
 			 */
-			 // ËùÒÔ»¹ĞèÒª¼ì²éÏÂÊÇ·ñ³É¹¦½ÓÊÕµ½±¨ÎÄ
+			 // æ‰€ä»¥è¿˜éœ€è¦æ£€æŸ¥ä¸‹æ˜¯å¦æˆåŠŸæ¥æ”¶åˆ°æŠ¥æ–‡
 			if (msqid != -1)
 				msg_unlock(msqid);
 			goto out_success;
 		}
-		err = PTR_ERR(msg); // ½«±¾½ø³ÌµÄmsg_receiver½á¹¹ÍÏÁ´£¬²¢ÇÒ¿´ÊÇ·ñÓĞĞÅºÅ´¦Àí
+		err = PTR_ERR(msg); // å°†æœ¬è¿›ç¨‹çš„msg_receiverç»“æ„æ‹–é“¾ï¼Œå¹¶ä¸”çœ‹æ˜¯å¦æœ‰ä¿¡å·å¤„ç†
 		if (err == -EAGAIN) {
 			if (msqid == -1)
 				BUG();
@@ -1087,7 +1086,7 @@ out_success:
 			if (signal_pending(current))
 				err = -EINTR;
 			else
-				goto retry; // Èç¹ûÃ»ÓĞĞÅºÅ´¦Àí£¬ÔòÌø×ªµ½retryÖØĞÂ¿ªÊ¼
+				goto retry; // å¦‚æœæ²¡æœ‰ä¿¡å·å¤„ç†ï¼Œåˆ™è·³è½¬åˆ°retryé‡æ–°å¼€å§‹
 		}
 	}
 out_unlock:
@@ -1097,16 +1096,16 @@ out_unlock:
 }
 
 /**
- * @brief ¶ÁÈ¡ÏµÍ³ÏûÏ¢½ø³Ì
- * @param buffer ÊÇ´ÓÇı¶¯²ãÏòÓ¦ÓÃ²ã·µ»ØµÄÊı¾İÇø£»µ±ÓĞÓÃ»§¶Á´Ë/proc/xxxµÄÎÄ¼şÊ±£¬ÓÉÏµÍ³·ÖÅäÒ»Ò³µÄ»º´æÇø£¬Çı¶¯Ê¹ÓÃread_proc´ËĞ´ÈëÊı¾İ¡£
- * @param start ±íÊ¾Ğ´ÔÚ´ËÒ³µÄÄÄÀï£¬ÈôÊı¾İ²»³¬¹ıÒ»Ò³£¬Ôò¸³ÖµÎªNULL
- * @param offset ±íÊ¾ÎÄ¼şÖ¸ÕëµÄÆ«ÒÆ
- * @param length ±íÊ¾Òª¶Á¶àÉÙ¸ö×Ö½Ú
- * @param eof Êä³ö²ÎÊı
- * @param data ÓÉÇı¶¯ÄÚ²¿Ê¹ÓÃ
+ * @brief è¯»å–ç³»ç»Ÿæ¶ˆæ¯è¿›ç¨‹
+ * @param buffer æ˜¯ä»é©±åŠ¨å±‚å‘åº”ç”¨å±‚è¿”å›çš„æ•°æ®åŒºï¼›å½“æœ‰ç”¨æˆ·è¯»æ­¤/proc/xxxçš„æ–‡ä»¶æ—¶ï¼Œç”±ç³»ç»Ÿåˆ†é…ä¸€é¡µçš„ç¼“å­˜åŒºï¼Œé©±åŠ¨ä½¿ç”¨read_procæ­¤å†™å…¥æ•°æ®ã€‚
+ * @param start è¡¨ç¤ºå†™åœ¨æ­¤é¡µçš„å“ªé‡Œï¼Œè‹¥æ•°æ®ä¸è¶…è¿‡ä¸€é¡µï¼Œåˆ™èµ‹å€¼ä¸ºNULL
+ * @param offset è¡¨ç¤ºæ–‡ä»¶æŒ‡é’ˆçš„åç§»
+ * @param length è¡¨ç¤ºè¦è¯»å¤šå°‘ä¸ªå­—èŠ‚
+ * @param eof è¾“å‡ºå‚æ•°
+ * @param data ç”±é©±åŠ¨å†…éƒ¨ä½¿ç”¨
  * 
  * @return 
- *		·µ»ØÖµÎª¿É¶ÁÈ¡µ½µÄ×Ö½ÚÊı
+ *		è¿”å›å€¼ä¸ºå¯è¯»å–åˆ°çš„å­—èŠ‚æ•°
 */
 #ifdef CONFIG_PROC_FS
 static int sysvipc_msg_read_proc(char* buffer, char** start, off_t offset, int length, int* eof, void* data)
