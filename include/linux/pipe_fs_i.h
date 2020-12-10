@@ -1,19 +1,14 @@
-#ifndef _LINUX_PIPE_FS_I_H
-#define _LINUX_PIPE_FS_I_H
-
-#define PIPEFS_MAGIC 0x50495045
-/* 描述管道的结构体 */
 struct pipe_inode_info {
-	wait_queue_head_t wait;
-	char *base;
+	wait_queue_head_t wait;//管道等待队列
+	char* base;
 	unsigned int len;
-	unsigned int start;
-	unsigned int readers;
-	unsigned int writers;
-	unsigned int waiting_readers;
+	unsigned int start;//当前管道缓存区读的位置
+	unsigned int readers;//读进程的标志，或编号
+	unsigned int writers;//写进程的标志，或编号
+	unsigned int waiting_readers;//在等待队列中睡眠的写进程的个数
 	unsigned int waiting_writers;
-	unsigned int r_counter;
-	unsigned int w_counter;
+	unsigned int r_counter;//与readers类似，但当等待写入FIFO的进程是使用
+	unsigned int w_counter;//与writers类似，但当等待写入FIFO的进程时使用
 };
 
 /* Differs from PIPE_BUF in that PIPE_SIZE is the length of the actual
@@ -39,8 +34,8 @@ struct pipe_inode_info {
 #define PIPE_MAX_RCHUNK(inode)	(PIPE_SIZE - PIPE_START(inode))
 #define PIPE_MAX_WCHUNK(inode)	(PIPE_SIZE - PIPE_END(inode))
 
-/* Drop the inode semaphore and wait for a pipe event, atomically */
-void pipe_wait(struct inode * inode);
+   /* Drop the inode semaphore and wait for a pipe event, atomically */
+void pipe_wait(struct inode* inode);
 
 struct inode* pipe_new(struct inode* inode);
 
