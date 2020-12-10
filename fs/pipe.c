@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  *  linux/fs/pipe.c
  *
  *  Copyright (C) 1991, 1992, 1999  Linus Torvalds
@@ -24,116 +24,116 @@
   */
 
   /* Drop the inode semaphore and wait for a pipe event, atomically */
-  /*É¾³ıinodeĞÅºÅÁ¿²¢ÒÔÔ­×Ó·½Ê½µÈ´ı¹ÜµÀÊÂ¼ş*/
+  /*åˆ é™¤inodeä¿¡å·é‡å¹¶ä»¥åŸå­æ–¹å¼ç­‰å¾…ç®¡é“äº‹ä»¶*/
 void pipe_wait(struct inode* inode)
 {
 	DECLARE_WAITQUEUE(wait, current);
-	current->state = TASK_INTERRUPTIBLE; /*ÈÎÎñ¿ÉÖĞ¶Ï*/
+	current->state = TASK_INTERRUPTIBLE; /*ä»»åŠ¡å¯ä¸­æ–­*/
 	add_wait_queue(PIPE_WAIT(*inode), &wait);
-	up(PIPE_SEM(*inode));/*»½ĞÑË¯ÃßµÄ½ø³Ì*/
+	up(PIPE_SEM(*inode));/*å”¤é†’ç¡çœ çš„è¿›ç¨‹*/
 	schedule();
 	remove_wait_queue(PIPE_WAIT(*inode), &wait);
-	current->state = TASK_RUNNING; /*ÈÎÎñÔËĞĞ*/
-	down(PIPE_SEM(*inode));/*Ê¹µÃµ÷ÓÃÕßË¯Ãß*/
+	current->state = TASK_RUNNING; /*ä»»åŠ¡è¿è¡Œ*/
+	down(PIPE_SEM(*inode));/*ä½¿å¾—è°ƒç”¨è€…ç¡çœ */
 }
-/*¹ÜµÀ¶Á²Ù×÷:(¹ÜµÀÎª¿Õ)¹ÜµÀ²»ÔÊĞíseek²Ù×÷,
- *¹ÜµÀÈç¹ûÎª¿Õµ«Í¨¹ıpipe_writersÅĞ¶Ï, Ã»ÓĞĞ´µÄfile¶ÔÏóÄÇ¾ÍÖ±½Ó·µ»Ø
- *.¹ÜµÀÎª¿Õ²¢ÇÒÉèÖÃÁË·Ç×èÈû, Ö±½Ó·µ»Ø
- *.¹ÜµÀÊı¾İÎª¿Õ, µ«ÓĞÏà¹Øfd»á½øĞĞĞ´²Ù×÷.ĞİÃßµÈ´ı±»»½ĞÑ¶ÁÈ¡Êı¾İ
- *.¹ÜµÀ²»Îª¿Õ, ÓĞ3ÖÖÇé¿ö, ¹ÜµÀ¶ÁÈ¡µ½ÁËÒªÇó³¤¶È, ¸ÕºÃÎª¿Õ»òÕßÓĞÊ£Óà, Ö±½Ó·µ»Ø
- *.¹ÜµÀ¶ÁÈ¡µÄÊı¾İÃ»ÓĞ´ïµ½ÒªÇó, , ²¢ÇÒÉèÖÃÁË·Ç×èÈû, ÄÇ¾Í¶Á¶àÉÙ·µ»Ø¶àÉÙ
- *Èç¹û¹ÜµÀ¶ÁÈ¡µÄÊı¾İÃ»´ïµ½ÒªÇó(¶ÁÈ¡Êı¾İ´óÓÚÊ£ÓàÊı¾İ), ²¢ÇÒ»¹ÓĞĞ´fdÔÚµÈ´ı, ²¢ÇÒÃ»ÓĞÉèÖÃ·Ç×èÈû±êÖ¾
- *Ôò»½ĞÑĞ´fd½ø³Ì, ¼ÌĞøÑ­»·¶Á.Ö±µ½¶ÁÍê»òÕßfile¶ÔÏóÃ»ÁË(Êı¾İ»¹Î´´ïµ½ÒªÇó).
+/*ç®¡é“è¯»æ“ä½œ:(ç®¡é“ä¸ºç©º)ç®¡é“ä¸å…è®¸seekæ“ä½œ,
+ *ç®¡é“å¦‚æœä¸ºç©ºä½†é€šè¿‡pipe_writersåˆ¤æ–­, æ²¡æœ‰å†™çš„fileå¯¹è±¡é‚£å°±ç›´æ¥è¿”å›
+ *.ç®¡é“ä¸ºç©ºå¹¶ä¸”è®¾ç½®äº†éé˜»å¡, ç›´æ¥è¿”å›
+ *.ç®¡é“æ•°æ®ä¸ºç©º, ä½†æœ‰ç›¸å…³fdä¼šè¿›è¡Œå†™æ“ä½œ.ä¼‘çœ ç­‰å¾…è¢«å”¤é†’è¯»å–æ•°æ®
+ *.ç®¡é“ä¸ä¸ºç©º, æœ‰3ç§æƒ…å†µ, ç®¡é“è¯»å–åˆ°äº†è¦æ±‚é•¿åº¦, åˆšå¥½ä¸ºç©ºæˆ–è€…æœ‰å‰©ä½™, ç›´æ¥è¿”å›
+ *.ç®¡é“è¯»å–çš„æ•°æ®æ²¡æœ‰è¾¾åˆ°è¦æ±‚, , å¹¶ä¸”è®¾ç½®äº†éé˜»å¡, é‚£å°±è¯»å¤šå°‘è¿”å›å¤šå°‘
+ *å¦‚æœç®¡é“è¯»å–çš„æ•°æ®æ²¡è¾¾åˆ°è¦æ±‚(è¯»å–æ•°æ®å¤§äºå‰©ä½™æ•°æ®), å¹¶ä¸”è¿˜æœ‰å†™fdåœ¨ç­‰å¾…, å¹¶ä¸”æ²¡æœ‰è®¾ç½®éé˜»å¡æ ‡å¿—
+ *åˆ™å”¤é†’å†™fdè¿›ç¨‹, ç»§ç»­å¾ªç¯è¯».ç›´åˆ°è¯»å®Œæˆ–è€…fileå¯¹è±¡æ²¡äº†(æ•°æ®è¿˜æœªè¾¾åˆ°è¦æ±‚).
 */
 static ssize_t
 pipe_read(struct file* filp, char* buf, size_t count, loff_t* ppos)
 {
-	struct inode* inode = filp->f_dentry->d_inode;/*»ñÈ¡µ±Ç°ÎÄ¼şÄ¿Â¼µÄĞÅºÅ*/
+	struct inode* inode = filp->f_dentry->d_inode;/*è·å–å½“å‰æ–‡ä»¶ç›®å½•çš„ä¿¡å·*/
 	ssize_t size, read, ret;
 
 	/* Seeks are not allowed on pipes.  */
-	/*¹ÜµÀÉÏ²»ÔÊĞíseek²Ù×÷¡£*/
-	ret = -ESPIPE;/*·Ç·Ç·¨ËÑË÷*/
+	/*ç®¡é“ä¸Šä¸å…è®¸seekæ“ä½œã€‚*/
+	ret = -ESPIPE;/*ééæ³•æœç´¢*/
 	read = 0;
-	if (ppos != &filp->f_pos)/*ppos±ØĞëÖ¸Ïòfilp->f_pos*/
+	if (ppos != &filp->f_pos)/*pposå¿…é¡»æŒ‡å‘filp->f_pos*/
 		goto out_nolock;
 
 	/* Always return 0 on null read.  */
-	/*¶ÁÈ¡¿ÕÖµÊ±Ê¼ÖÕ·µ»Ø0¡£*/
+	/*è¯»å–ç©ºå€¼æ—¶å§‹ç»ˆè¿”å›0ã€‚*/
 	ret = 0;
 	if (count == 0)
 		goto out_nolock;
 
 	/* Get the pipe semaphore */
 	ret = -ERESTARTSYS;
-	if (down_interruptible(PIPE_SEM(*inode)))/*ĞÅºÅÊÇ·ñ±»´ò¶Ï*/
+	if (down_interruptible(PIPE_SEM(*inode)))/*ä¿¡å·æ˜¯å¦è¢«æ‰“æ–­*/
 		goto out_nolock;
 
-	if (PIPE_EMPTY(*inode)) {//¹ÜµÀÖĞµÄ×Ö½ÚÊıÈç¹ûµÈÓÚ0,±íÊ¾Îª¿Õ¹ÜµÀ
+	if (PIPE_EMPTY(*inode)) {//ç®¡é“ä¸­çš„å­—èŠ‚æ•°å¦‚æœç­‰äº0,è¡¨ç¤ºä¸ºç©ºç®¡é“
 	do_more_read:
 		ret = 0;
-		if (!PIPE_WRITERS(*inode))//Èç¹û¹ÜµÀÎŞÈËĞ´,ÄÇ¾ÍµÈÓÚĞ´¶Ë¹Ø±Õ,ÄÇÃ´¿Í»§¶ËÒ²Òª¹Ø±Õ
+		if (!PIPE_WRITERS(*inode))//å¦‚æœç®¡é“æ— äººå†™,é‚£å°±ç­‰äºå†™ç«¯å…³é—­,é‚£ä¹ˆå®¢æˆ·ç«¯ä¹Ÿè¦å…³é—­
 			goto out;
 
 		ret = -EAGAIN;
-		if (filp->f_flags & O_NONBLOCK)//ÉèÖÃ·Ç×èÈûÖ±½Ó·µ»Ø,ÒòÎª¹ÜµÀÎª¿Õ
+		if (filp->f_flags & O_NONBLOCK)//è®¾ç½®éé˜»å¡ç›´æ¥è¿”å›,å› ä¸ºç®¡é“ä¸ºç©º
 			goto out;
 
 		for (;;) {
 			PIPE_WAITING_READERS(*inode)++;
-			pipe_wait(inode); //ĞİÃß, ÒòÎªÃ»ÓĞÊı¾İ¿É¶Á
+			pipe_wait(inode); //ä¼‘çœ , å› ä¸ºæ²¡æœ‰æ•°æ®å¯è¯»
 			PIPE_WAITING_READERS(*inode)--;
 			ret = -ERESTARTSYS;
-			if (signal_pending(current)) //µ±Ç°½ø³ÌÓĞĞÅºÅÎ´´¦Àí
+			if (signal_pending(current)) //å½“å‰è¿›ç¨‹æœ‰ä¿¡å·æœªå¤„ç†
 				goto out;
 			ret = 0;
-			if (!PIPE_EMPTY(*inode))//Èç¹û¹ÜµÀ²»Îª¿Õ,Ìø³öÕâÑ­»·
+			if (!PIPE_EMPTY(*inode))//å¦‚æœç®¡é“ä¸ä¸ºç©º,è·³å‡ºè¿™å¾ªç¯
 				break;
-			if (!PIPE_WRITERS(*inode))//Ã»ÓĞĞ´¶Ë,Ö±½ÓÌø³ö
+			if (!PIPE_WRITERS(*inode))//æ²¡æœ‰å†™ç«¯,ç›´æ¥è·³å‡º
 				goto out;
 		}
 	}
 
 	/* Read what data is available.  */
-	/*¶ÁÈ¡¿ÉÓÃµÄÊı¾İ¡£*/
-	ret = -EFAULT;//Èç¹û¶ÁÈ¡
-	while (count > 0 && (size = PIPE_LEN(*inode))) {//count±íÊ¾Ê£ÓàÊı²»Îª0,²¢ÇÒpipe»¹ÓĞÊı¾İ
-		char* pipebuf = PIPE_BASE(*inode) + PIPE_START(*inode);//ÆğÊ¼Î»ÖÃ
-		ssize_t chars = PIPE_MAX_RCHUNK(*inode);//startµ½base
+	/*è¯»å–å¯ç”¨çš„æ•°æ®ã€‚*/
+	ret = -EFAULT;//å¦‚æœè¯»å–
+	while (count > 0 && (size = PIPE_LEN(*inode))) {//countè¡¨ç¤ºå‰©ä½™æ•°ä¸ä¸º0,å¹¶ä¸”pipeè¿˜æœ‰æ•°æ®
+		char* pipebuf = PIPE_BASE(*inode) + PIPE_START(*inode);//èµ·å§‹ä½ç½®
+		ssize_t chars = PIPE_MAX_RCHUNK(*inode);//startåˆ°base
 
-		if (chars > count)//Èç¹ûstartµ½baseµÄÊı¾İ´óÓÚcount
+		if (chars > count)//å¦‚æœstartåˆ°baseçš„æ•°æ®å¤§äºcount
 			chars = count;
 		if (chars > size)
 			chars = size;
-		//ÓĞ3ÖÖÇé¿ö.(1)¶ÁÈ¡µ½ÒªÇó³¤¶È,¸ÕºÃ»òÕß»¹ÓĞÊ£Óà,Ö±½Ó·µ»ØÒªÇó³¤¶È,·ñÔò·µ»ØÊµ¼Ê³¤¶È
+		//æœ‰3ç§æƒ…å†µ.(1)è¯»å–åˆ°è¦æ±‚é•¿åº¦,åˆšå¥½æˆ–è€…è¿˜æœ‰å‰©ä½™,ç›´æ¥è¿”å›è¦æ±‚é•¿åº¦,å¦åˆ™è¿”å›å®é™…é•¿åº¦
 		if (copy_to_user(buf, pipebuf, chars))
 			goto out;
 
-		read += chars;//readµÈÓÚÊµ¼Ê¶ÁÈ¡³¤¶È
-		PIPE_START(*inode) += chars;//ÆğÊ¼Î»ÖÃ¸ü¸Ä
-		PIPE_START(*inode) &= (PIPE_SIZE - 1);//¶ÔÆë
-		PIPE_LEN(*inode) -= chars;//³¤¶È¸ü¸Ä
-		count -= chars;//ÒªÇó³¤¶È-chars³¤¶È
-		buf += chars;//ÓÃ»§»º³å+chars
+		read += chars;//readç­‰äºå®é™…è¯»å–é•¿åº¦
+		PIPE_START(*inode) += chars;//èµ·å§‹ä½ç½®æ›´æ”¹
+		PIPE_START(*inode) &= (PIPE_SIZE - 1);//å¯¹é½
+		PIPE_LEN(*inode) -= chars;//é•¿åº¦æ›´æ”¹
+		count -= chars;//è¦æ±‚é•¿åº¦-charsé•¿åº¦
+		buf += chars;//ç”¨æˆ·ç¼“å†²+chars
 	}
 
 	/* Cache behaviour optimization */
-	if (!PIPE_LEN(*inode))//Èç¹û³¤¶ÈÎª0,¾Í°ÑstartÉèÖÃµ½Ò³¿ªÍ·
+	if (!PIPE_LEN(*inode))//å¦‚æœé•¿åº¦ä¸º0,å°±æŠŠstartè®¾ç½®åˆ°é¡µå¼€å¤´
 		PIPE_START(*inode) = 0;
-	//Èç¹û¶ÁÈ¡µÄÊı¾İ²»¹»ÒªÇóµÄ³¤¶È²¢ÇÒ»¹ÓĞµÈ´ıĞ´½ø³Ì²¢ÇÒÎ´ÉèÖÃ×èÈû
+	//å¦‚æœè¯»å–çš„æ•°æ®ä¸å¤Ÿè¦æ±‚çš„é•¿åº¦å¹¶ä¸”è¿˜æœ‰ç­‰å¾…å†™è¿›ç¨‹å¹¶ä¸”æœªè®¾ç½®é˜»å¡
 	if (count && PIPE_WAITING_WRITERS(*inode) && !(filp->f_flags & O_NONBLOCK)) {
 		/*
 		 * We know that we are going to sleep: signal
 		 * writers synchronously that there is more
 		 * room.
 		 */
-		wake_up_interruptible_sync(PIPE_WAIT(*inode));//»½ĞÑ
-		if (!PIPE_EMPTY(*inode))//¹ÜµÀ±ØĞëÎª¿Õ
+		wake_up_interruptible_sync(PIPE_WAIT(*inode));//å”¤é†’
+		if (!PIPE_EMPTY(*inode))//ç®¡é“å¿…é¡»ä¸ºç©º
 			BUG();
-		goto do_more_read;//¼ÌĞø¶Á
+		goto do_more_read;//ç»§ç»­è¯»
 	}
 	/* Signal writers asynchronously that there is more room.  */
-	/*ĞÅºÅĞ´Èë³ÌĞòÒì²½µØ±íÊ¾ÓĞ¸ü¶àµÄ¿Õ¼ä¡£*/
+	/*ä¿¡å·å†™å…¥ç¨‹åºå¼‚æ­¥åœ°è¡¨ç¤ºæœ‰æ›´å¤šçš„ç©ºé—´ã€‚*/
 	wake_up_interruptible(PIPE_WAIT(*inode));
 
 	ret = read;
@@ -144,14 +144,14 @@ out_nolock:
 		ret = read;
 	return ret;
 }
-/*¹ÜµÀĞ´Ïà¹Ø²Ù×÷:(ÒÔÏÂ×èÈûÎ´Ä¬ÈÏÉèÖÃ)
- *Ğ´ÈëµÄÊı¾İ²ÎÊıÎª0, Ö±½Ó·µ»Ø
- *ÅĞ¶ÏÁË¹ÜµÀÃ»ÓĞ¶ÁµÄfd, Ö±½Ó·µ»Ø²¢·¢ËÍSIGPIPEĞÅºÅ±íÊ¾¹ÜµÀÆÆÁÑ
- *ÊÇ·ñ³¬¹ıÁË¹ÜµÀµÄ»º´æ´óĞ¡, ³¬¹ıÁËÔò²»±£Ö¤ÆäÔ­×ÓĞÔ²¢½«freeÉèÖÃÎª1, ²¢½«Òª¶ÁÈ¡µÄ×Ö½ÚÏŞÖÆÎªÒ»Ò³´óĞ¡, ÕâÊ±ºòÄÜÓĞ¶à´ó¿Õ¼ä¾ÍĞ´¶àÉÙ
- *×Ö½Ú, ÓàÏÂµÄµÈÏû·ÑÕß¶àÒ»Ğ©×Ö½ÚÔÙ¼ÌĞøĞ´
- *ÉèÖÃÁË²»×èÈûÎ», µ«¹ÜµÀÊ£Óà¿Õ¼äĞ¡ÓÚÒªĞ´Èë¿Õ¼äÖ±½ÓÍË³ö
- *Èç¹ûÒªĞ´ÈëµÄ×Ö½Ú´óÓÚÕû¸ö»º³åÇøÊ£Óà¿Õ¼ä, ÄÇµ±Ç°Ğ´¹ÜµÀ½ø³ÌË¯Ãß, Ö±µ½»º³åÇøÓĞÊ£Óà¿Õ¼ä
- *Èç¹ûĞ´ÈëµÄ×Ö½ÚÊıµÈÓÚÒªÇóµÄ×Ö½ÚÊı, ÄÇ¾Í·µ»Ø
+/*ç®¡é“å†™ç›¸å…³æ“ä½œ:(ä»¥ä¸‹é˜»å¡æœªé»˜è®¤è®¾ç½®)
+ *å†™å…¥çš„æ•°æ®å‚æ•°ä¸º0, ç›´æ¥è¿”å›
+ *åˆ¤æ–­äº†ç®¡é“æ²¡æœ‰è¯»çš„fd, ç›´æ¥è¿”å›å¹¶å‘é€SIGPIPEä¿¡å·è¡¨ç¤ºç®¡é“ç ´è£‚
+ *æ˜¯å¦è¶…è¿‡äº†ç®¡é“çš„ç¼“å­˜å¤§å°, è¶…è¿‡äº†åˆ™ä¸ä¿è¯å…¶åŸå­æ€§å¹¶å°†freeè®¾ç½®ä¸º1, å¹¶å°†è¦è¯»å–çš„å­—èŠ‚é™åˆ¶ä¸ºä¸€é¡µå¤§å°, è¿™æ—¶å€™èƒ½æœ‰å¤šå¤§ç©ºé—´å°±å†™å¤šå°‘
+ *å­—èŠ‚, ä½™ä¸‹çš„ç­‰æ¶ˆè´¹è€…å¤šä¸€äº›å­—èŠ‚å†ç»§ç»­å†™
+ *è®¾ç½®äº†ä¸é˜»å¡ä½, ä½†ç®¡é“å‰©ä½™ç©ºé—´å°äºè¦å†™å…¥ç©ºé—´ç›´æ¥é€€å‡º
+ *å¦‚æœè¦å†™å…¥çš„å­—èŠ‚å¤§äºæ•´ä¸ªç¼“å†²åŒºå‰©ä½™ç©ºé—´, é‚£å½“å‰å†™ç®¡é“è¿›ç¨‹ç¡çœ , ç›´åˆ°ç¼“å†²åŒºæœ‰å‰©ä½™ç©ºé—´
+ *å¦‚æœå†™å…¥çš„å­—èŠ‚æ•°ç­‰äºè¦æ±‚çš„å­—èŠ‚æ•°, é‚£å°±è¿”å›
  */
 static ssize_t
 pipe_write(struct file* filp, const char* buf, size_t count, loff_t* ppos)
@@ -167,37 +167,37 @@ pipe_write(struct file* filp, const char* buf, size_t count, loff_t* ppos)
 
 	/* Null write succeeds.  */
 	ret = 0;
-	if (count == 0)//Ğ´µÄÊı¾İÒªÇóÎª0,Ö±½ÓÌøµ½out_nolock
+	if (count == 0)//å†™çš„æ•°æ®è¦æ±‚ä¸º0,ç›´æ¥è·³åˆ°out_nolock
 		goto out_nolock;
 
 	ret = -ERESTARTSYS;
-	if (down_interruptible(PIPE_SEM(*inode)))//¼ÏËøĞÅºÅÁ¿Êı¾İ(count)²»Îª0£¬Ôò°ÑÆä¼õ1£¬²¢·µ»Ø£¬µ÷ÓÃ³É¹¦£»·ñÔòµ÷ÓÃ__down½øĞĞµÈ´ı£¬µ÷ÓÃÕß½øĞĞË¯Ãß¡£
+	if (down_interruptible(PIPE_SEM(*inode)))//æ·é”ä¿¡å·é‡æ•°æ®(count)ä¸ä¸º0ï¼Œåˆ™æŠŠå…¶å‡1ï¼Œå¹¶è¿”å›ï¼Œè°ƒç”¨æˆåŠŸï¼›å¦åˆ™è°ƒç”¨__downè¿›è¡Œç­‰å¾…ï¼Œè°ƒç”¨è€…è¿›è¡Œç¡çœ ã€‚
 
 		goto out_nolock;
 
 	/* No readers yields SIGPIPE.  */
-	if (!PIPE_READERS(*inode))//Èç¹ûÃ»ÓĞ¶ÁµÄfdÁË,Ö±½Ó·¢ËÍsigpipeĞÅºÅ
+	if (!PIPE_READERS(*inode))//å¦‚æœæ²¡æœ‰è¯»çš„fdäº†,ç›´æ¥å‘é€sigpipeä¿¡å·
 		goto sigpipe;
 
 	/* If count <= PIPE_BUF, we have to make it atomic.  */
-	free = (count <= PIPE_BUF ? count : 1);//ÊÇ·ñ³¬¹ı»º³åÇø´óĞ¡,³¬¹ıÉèÖÃÎª1
+	free = (count <= PIPE_BUF ? count : 1);//æ˜¯å¦è¶…è¿‡ç¼“å†²åŒºå¤§å°,è¶…è¿‡è®¾ç½®ä¸º1
 
 	/* Wait, or check for, available space.  */
-	if (filp->f_flags & O_NONBLOCK) {//±íÊ¾¼´Ê¹¶Á²»µ½¶«Î÷,Ò²²»¸Ã×èÈû
+	if (filp->f_flags & O_NONBLOCK) {//è¡¨ç¤ºå³ä½¿è¯»ä¸åˆ°ä¸œè¥¿,ä¹Ÿä¸è¯¥é˜»å¡
 		ret = -EAGAIN;
-		if (PIPE_FREE(*inode) < free)//¹ÜµÀÊ£ÓàµÄ¿Õ¼äĞ¡ÓÚÒªĞ´ÈëµÄÊı¾İ,Ö±½ÓÍË³ö
+		if (PIPE_FREE(*inode) < free)//ç®¡é“å‰©ä½™çš„ç©ºé—´å°äºè¦å†™å…¥çš„æ•°æ®,ç›´æ¥é€€å‡º
 			goto out;
 	}
 	else {
-		while (PIPE_FREE(*inode) < free) {//Èç¹ûÒªĞ´ÈëµÄ×Ö½ÚÊı´óÓÚÕû¸ö»º³åÇøµÄ´óĞ¡£¬ÄÇ¾ÍË¯Ãß
-			PIPE_WAITING_WRITERS(*inode)++;//µÈ´ıĞ´++
-			pipe_wait(inode);//Ë¯Ãß
+		while (PIPE_FREE(*inode) < free) {//å¦‚æœè¦å†™å…¥çš„å­—èŠ‚æ•°å¤§äºæ•´ä¸ªç¼“å†²åŒºçš„å¤§å°ï¼Œé‚£å°±ç¡çœ 
+			PIPE_WAITING_WRITERS(*inode)++;//ç­‰å¾…å†™++
+			pipe_wait(inode);//ç¡çœ 
 			PIPE_WAITING_WRITERS(*inode)--;
 			ret = -ERESTARTSYS;
-			if (signal_pending(current))//ÓĞĞÅºÅÒª´¦Àí
+			if (signal_pending(current))//æœ‰ä¿¡å·è¦å¤„ç†
 				goto out;
 
-			if (!PIPE_READERS(*inode))//Èç¹û²»´æÔÚ¶ÁµÄfd,·¢ËÍsigpipeĞÅºÅ
+			if (!PIPE_READERS(*inode))//å¦‚æœä¸å­˜åœ¨è¯»çš„fd,å‘é€sigpipeä¿¡å·
 				goto sigpipe;
 		}
 	}
@@ -208,24 +208,24 @@ pipe_write(struct file* filp, const char* buf, size_t count, loff_t* ppos)
 		int space;
 		char* pipebuf = PIPE_BASE(*inode) + PIPE_END(*inode);
 		ssize_t chars = PIPE_MAX_WCHUNK(*inode);
-		//Èç¹ûÃ»ÓĞÊ£Óà¿Õ¼äÁË£¬ÄÇÃ´¾ÍÖ»ËµÃ÷£¬ÒªĞ´µÄ×Ö½Ú´óÓÚ»º³åÇøµÄ×Ü´óĞ¡£¬Ö´ĞĞÏÂÃæµÄdo_whileÑ­»·
-		if ((space = PIPE_FREE(*inode)) != 0) {//space»ñÈ¡Ê£Óà¿Õ¼ä
+		//å¦‚æœæ²¡æœ‰å‰©ä½™ç©ºé—´äº†ï¼Œé‚£ä¹ˆå°±åªè¯´æ˜ï¼Œè¦å†™çš„å­—èŠ‚å¤§äºç¼“å†²åŒºçš„æ€»å¤§å°ï¼Œæ‰§è¡Œä¸‹é¢çš„do_whileå¾ªç¯
+		if ((space = PIPE_FREE(*inode)) != 0) {//spaceè·å–å‰©ä½™ç©ºé—´
 			if (chars > count)
 				chars = count;
 			if (chars > space)
-				chars = space;//spaceÓëcountÖĞÑ¡È¡×îĞ¡µÄÄÇ¸ö
+				chars = space;//spaceä¸countä¸­é€‰å–æœ€å°çš„é‚£ä¸ª
 
-			if (copy_from_user(pipebuf, buf, chars))//¿½±´µ½¹ÜµÀ
+			if (copy_from_user(pipebuf, buf, chars))//æ‹·è´åˆ°ç®¡é“
 				goto out;
 
-			written += chars;//Ğ´Èë¶àÉÙÊı¾İ
-			PIPE_LEN(*inode) += chars;//³¤¶È++
+			written += chars;//å†™å…¥å¤šå°‘æ•°æ®
+			PIPE_LEN(*inode) += chars;//é•¿åº¦++
 			count -= chars;
 			buf += chars;
 			space = PIPE_FREE(*inode);
 			continue;
 		}
-		//Èç¹ûÊ£Óà¿Õ¼äµÈÓÚ0
+		//å¦‚æœå‰©ä½™ç©ºé—´ç­‰äº0
 		ret = written;
 		if (filp->f_flags & O_NONBLOCK)
 			break;
@@ -234,22 +234,22 @@ pipe_write(struct file* filp, const char* buf, size_t count, loff_t* ppos)
 			/*
 			 * Synchronous wake-up: it knows that this process
 			 * is going to give up this CPU, so it doesnt have
-			 * to do idle reschedules.Í¬²½»½ĞÑ£ºËüÖªµÀÕâ¸ö½ø³Ì½«·ÅÆúÕâ¸öCPU£¬ËùÒÔËü²»±Ø½øĞĞ¿ÕÏĞµÄÖØĞÂµ÷¶È¡£
+			 * to do idle reschedules.åŒæ­¥å”¤é†’ï¼šå®ƒçŸ¥é“è¿™ä¸ªè¿›ç¨‹å°†æ”¾å¼ƒè¿™ä¸ªCPUï¼Œæ‰€ä»¥å®ƒä¸å¿…è¿›è¡Œç©ºé—²çš„é‡æ–°è°ƒåº¦ã€‚
 			 */
-			wake_up_interruptible_sync(PIPE_WAIT(*inode));//»½ĞÑµÈ´ıµÄ½ø³Ì
+			wake_up_interruptible_sync(PIPE_WAIT(*inode));//å”¤é†’ç­‰å¾…çš„è¿›ç¨‹
 			PIPE_WAITING_WRITERS(*inode)++;
-			pipe_wait(inode);//Ë¯ÃßµÈ´ı
+			pipe_wait(inode);//ç¡çœ ç­‰å¾…
 			PIPE_WAITING_WRITERS(*inode)--;
-			if (signal_pending(current))//»½ĞÑºÜ¿ÉÄÜÊÇÓĞĞÅºÅ
+			if (signal_pending(current))//å”¤é†’å¾ˆå¯èƒ½æ˜¯æœ‰ä¿¡å·
 				goto out;
-			if (!PIPE_READERS(*inode))//Èç¹ûÃ»inode¶Á¹ÜµÀ
+			if (!PIPE_READERS(*inode))//å¦‚æœæ²¡inodeè¯»ç®¡é“
 				goto sigpipe;
-		} while (!PIPE_FREE(*inode));//Èç¹û¹ÜµÀÒ»Ö±ÊÇÂúµÄ,¼ÌĞødo_whileÑ­»·,Ö±µ½ÓĞÊ£Óà¿Õ¼ä
+		} while (!PIPE_FREE(*inode));//å¦‚æœç®¡é“ä¸€ç›´æ˜¯æ»¡çš„,ç»§ç»­do_whileå¾ªç¯,ç›´åˆ°æœ‰å‰©ä½™ç©ºé—´
 		ret = -EFAULT;
 	}
 
 	/* Signal readers asynchronously that there is more data.  */
-	wake_up_interruptible(PIPE_WAIT(*inode));//»½ĞÑµÈ´ı¶ÁµÄ½ø³Ì
+	wake_up_interruptible(PIPE_WAIT(*inode));//å”¤é†’ç­‰å¾…è¯»çš„è¿›ç¨‹
 
 	inode->i_ctime = inode->i_mtime = CURRENT_TIME;
 	mark_inode_dirty(inode);
@@ -261,7 +261,7 @@ out_nolock:
 		ret = written;
 	return ret;
 
-sigpipe://¶Á¶Ë¶¼¹Ø±ÕÁË,ÄÇ¾Í·¢ËÍsigpipeĞÅºÅ
+sigpipe://è¯»ç«¯éƒ½å…³é—­äº†,é‚£å°±å‘é€sigpipeä¿¡å·
 	if (written)
 		goto out;
 	up(PIPE_SEM(*inode));
@@ -270,16 +270,16 @@ sigpipe://¶Á¶Ë¶¼¹Ø±ÕÁË,ÄÇ¾Í·¢ËÍsigpipeĞÅºÅ
 }
 
 static loff_t
-//·µ»Øµ±Ç°ÎÄ¼şÆ«ÒÆÁ¿£ºĞÂµÄÆ«ÒÆÁ¿£¨³É¹¦£©£¬ - 1£¨Ê§°Ü£©
+//è¿”å›å½“å‰æ–‡ä»¶åç§»é‡ï¼šæ–°çš„åç§»é‡ï¼ˆæˆåŠŸï¼‰ï¼Œ - 1ï¼ˆå¤±è´¥ï¼‰
 pipe_lseek(struct file* file, loff_t offset, int orig)
 {
 	return -ESPIPE;
 }
 
 static ssize_t
-//bad_pipe_wº¯Êı£»¶ÔĞ´Èë¶ËÃèÊö·ûÖ´ĞĞread²Ù×÷£¬ÄÚºË¾Í»áÖ´ĞĞbad_pipe_rº¯Êı¡£
-//ÕâÁ½¸öº¯Êı±È½Ï¼òµ¥£¬¶¼ÊÇÖ±½Ó·µ»Ø-EBADF¡£
-//¶ÔÓ¦µÄreadºÍwriteµ÷ÓÃ¶¼»áÊ§°Ü£¬·µ»Ø-1£¬²¢ÖÃerrnoÎªEBADF¡£
+//bad_pipe_wå‡½æ•°ï¼›å¯¹å†™å…¥ç«¯æè¿°ç¬¦æ‰§è¡Œreadæ“ä½œï¼Œå†…æ ¸å°±ä¼šæ‰§è¡Œbad_pipe_rå‡½æ•°ã€‚
+//è¿™ä¸¤ä¸ªå‡½æ•°æ¯”è¾ƒç®€å•ï¼Œéƒ½æ˜¯ç›´æ¥è¿”å›-EBADFã€‚
+//å¯¹åº”çš„readå’Œwriteè°ƒç”¨éƒ½ä¼šå¤±è´¥ï¼Œè¿”å›-1ï¼Œå¹¶ç½®errnoä¸ºEBADFã€‚
 bad_pipe_r(struct file* filp, char* buf, size_t count, loff_t* ppos)
 {
 	return -EBADF;
@@ -292,7 +292,7 @@ bad_pipe_w(struct file* filp, const char* buf, size_t count, loff_t* ppos)
 }
 
 static int
-//ioctlÊÇÉè±¸Çı¶¯³ÌĞòÖĞ¶ÔÉè±¸µÄI/OÍ¨µÀ½øĞĞ¹ÜÀíµÄº¯Êı
+//ioctlæ˜¯è®¾å¤‡é©±åŠ¨ç¨‹åºä¸­å¯¹è®¾å¤‡çš„I/Oé€šé“è¿›è¡Œç®¡ç†çš„å‡½æ•°
 pipe_ioctl(struct inode* pino, struct file* filp,
 	unsigned int cmd, unsigned long arg)
 {
@@ -306,10 +306,10 @@ pipe_ioctl(struct inode* pino, struct file* filp,
 
 /* No kernel lock held - fine */
 static unsigned int
-/*pollÂÖÑ¯º¯Êı
- *¼àÌıÕâ¸öÎÄ¼şÃèÊö·ûĞèÒª¼àÌı¿É¶Á¡¢¿ÉĞ´»òÕßÒì³£ÊÂ¼ş£»
- *µ±ÓĞ¿É¶Á¡¢¿ÉĞ´ºÍÒì³£ÊÂ¼ş·¢ÉúÊ±£¬ÔÚselectµ÷ÓÃ¹ı³ÌÖĞ£¬
- *ÄÚºË»áĞŞ¸ÄÏàÓ¦µÄÕâÈı¸öÎÄ¼şÃèÊö·û¼¯ºÏÖĞµÄÃ»ÓĞÊÂ¼ş·¢ÉúµÄÎÄ¼şÃèÊö·û±ê¼ÇÎ»Îª0
+/*pollè½®è¯¢å‡½æ•°
+ *ç›‘å¬è¿™ä¸ªæ–‡ä»¶æè¿°ç¬¦éœ€è¦ç›‘å¬å¯è¯»ã€å¯å†™æˆ–è€…å¼‚å¸¸äº‹ä»¶ï¼›
+ *å½“æœ‰å¯è¯»ã€å¯å†™å’Œå¼‚å¸¸äº‹ä»¶å‘ç”Ÿæ—¶ï¼Œåœ¨selectè°ƒç”¨è¿‡ç¨‹ä¸­ï¼Œ
+ *å†…æ ¸ä¼šä¿®æ”¹ç›¸åº”çš„è¿™ä¸‰ä¸ªæ–‡ä»¶æè¿°ç¬¦é›†åˆä¸­çš„æ²¡æœ‰äº‹ä»¶å‘ç”Ÿçš„æ–‡ä»¶æè¿°ç¬¦æ ‡è®°ä½ä¸º0
  */
 	pipe_poll(struct file* filp, poll_table* wait)
 {
@@ -398,7 +398,7 @@ pipe_write_open(struct inode* inode, struct file* filp)
 }
 
 static int
-//¶ÁĞ´·½Ê½´ò¿ª
+//è¯»å†™æ–¹å¼æ‰“å¼€
 pipe_rdwr_open(struct inode* inode, struct file* filp)
 {
 	down(PIPE_SEM(*inode));
@@ -411,8 +411,8 @@ pipe_rdwr_open(struct inode* inode, struct file* filp)
 	return 0;
 }
 
-/*fifoÃüÃû¹ÜµÀµÄÊµÏÖ ÈÃÁ½¸ö²»Ïà¸ÉµÄ½ø³ÌÕÒµ½´øÓĞpipeÊôĞÔµÄinode
- ÎÒÃÇ×ÔÈ»¾ÍÏëµ½ÀûÓÃ´ÅÅÌÎÄ¼ş
+/*fifoå‘½åç®¡é“çš„å®ç° è®©ä¸¤ä¸ªä¸ç›¸å¹²çš„è¿›ç¨‹æ‰¾åˆ°å¸¦æœ‰pipeå±æ€§çš„inode
+ æˆ‘ä»¬è‡ªç„¶å°±æƒ³åˆ°åˆ©ç”¨ç£ç›˜æ–‡ä»¶
  * The file_operations structs are not static because they
  * are also used in linux/fs/fifo.c to do operations on FIFOs.
  */
@@ -420,7 +420,7 @@ struct file_operations read_fifo_fops = {
 	llseek:		pipe_lseek,
 	read : pipe_read,
 	write : bad_pipe_w,
-	poll : fifo_poll,//fifo´´½¨µÄÎÄ¼şÖ»ÊÇÈÃ¶ÁĞ´½ø³ÌÄÜÕÒµ½ÏàÍ¬µÄinode£¬½ø¶ø²Ù×÷ÏàÍ¬µÄpipe»º³åÇø¡£
+	poll : fifo_poll,//fifoåˆ›å»ºçš„æ–‡ä»¶åªæ˜¯è®©è¯»å†™è¿›ç¨‹èƒ½æ‰¾åˆ°ç›¸åŒçš„inodeï¼Œè¿›è€Œæ“ä½œç›¸åŒçš„pipeç¼“å†²åŒºã€‚
 	ioctl : pipe_ioctl,
 	open : pipe_read_open,
 	release : pipe_read_release,
@@ -475,19 +475,19 @@ struct file_operations rdwr_pipe_fops = {
 	open : pipe_rdwr_open,
 	release : pipe_rdwr_release,
 };
-//Àı»¯Ò»¸ö´øÓĞpipeÊôĞÔµÄinode
+//ä¾‹åŒ–ä¸€ä¸ªå¸¦æœ‰pipeå±æ€§çš„inode
 struct inode* pipe_new(struct inode* inode)
 {
-	unsigned long page;// ÉêÇëÒ»¸öÄÚ´æÒ³£¬×÷ÎªpipeµÄ»º´æ
+	unsigned long page;// ç”³è¯·ä¸€ä¸ªå†…å­˜é¡µï¼Œä½œä¸ºpipeçš„ç¼“å­˜
 
 	page = __get_free_page(GFP_USER);
 	if (!page)
 		return NULL;
-	// Îªpipe_inode_info½á¹¹Ìå·ÖÅäÄÚ´æ
+	// ä¸ºpipe_inode_infoç»“æ„ä½“åˆ†é…å†…å­˜
 	inode->i_pipe = kmalloc(sizeof(struct pipe_inode_info), GFP_KERNEL);
 	if (!inode->i_pipe)
 		goto fail_page;
-	// ³õÊ¼»¯pipe_inode_infoÊôĞÔ
+	// åˆå§‹åŒ–pipe_inode_infoå±æ€§
 	init_waitqueue_head(PIPE_WAIT(*inode));
 	PIPE_BASE(*inode) = (char*)page;
 	PIPE_START(*inode) = PIPE_LEN(*inode) = 0;
@@ -509,20 +509,20 @@ static int pipefs_delete_dentry(struct dentry* dentry)
 static struct dentry_operations pipefs_dentry_operations = {
 	d_delete:	pipefs_delete_dentry,
 };
-//»ñÈ¡¹ÜµÀµÄinode½á¹¹
+//è·å–ç®¡é“çš„inodeç»“æ„
 static struct inode* get_pipe_inode(void)
 {
-	//¡¡´Ópipefs³¬¼¶¿éÖĞ·ÖÅäÒ»¸öinode
+	//ã€€ä»pipefsè¶…çº§å—ä¸­åˆ†é…ä¸€ä¸ªinode
 	struct inode* inode = new_inode(pipe_mnt->mnt_sb);
 
 	if (!inode)
 		goto fail_inode;
-	// pipe_newº¯ÊıÖ÷ÒªÓÃÀ´ÎªÕâ¸öinode³õÊ¼»¯pipeÊôĞÔ£¬¾ÍÊÇpipe_inode_info½á¹¹Ìå
+	// pipe_newå‡½æ•°ä¸»è¦ç”¨æ¥ä¸ºè¿™ä¸ªinodeåˆå§‹åŒ–pipeå±æ€§ï¼Œå°±æ˜¯pipe_inode_infoç»“æ„ä½“
 	if (!pipe_new(inode))
 		goto fail_iput;
 	PIPE_READERS(*inode) = PIPE_WRITERS(*inode) = 1;
-	inode->i_fop = &rdwr_pipe_fops;//ÉèÖÃpipefsµÄinode²Ù×÷º¯Êı¼¯ºÏ£¬rdwr_pipe_fops
-	// Îª½á¹¹Ìå£¬°üº¬¶ÁĞ´¹ÜµÀËùÓĞ²Ù×÷
+	inode->i_fop = &rdwr_pipe_fops;//è®¾ç½®pipefsçš„inodeæ“ä½œå‡½æ•°é›†åˆï¼Œrdwr_pipe_fops
+	// ä¸ºç»“æ„ä½“ï¼ŒåŒ…å«è¯»å†™ç®¡é“æ‰€æœ‰æ“ä½œ
 	/*
 	 * Mark the inode dirty from the very beginning,
 	 * that way it will never be moved to the dirty
@@ -542,8 +542,8 @@ fail_iput:
 fail_inode:
 	return NULL;
 }
-/*pipeµÄ½¨Á¢µÄÊµÏÖ
- *¶ÔÓÚÃ¿¸ö¹ÜµÀÀ´Ëµ£¬ÄÚºË¶¼´´½¨Ò»¸öinode½áµã¶ÔÏó£¬Á½¸öfile¶ÔÏó£¬Ò»¸öÓÃÓÚ¶Á£¬Ò»¸öÓÃÓÚĞ´¡£
+/*pipeçš„å»ºç«‹çš„å®ç°
+ *å¯¹äºæ¯ä¸ªç®¡é“æ¥è¯´ï¼Œå†…æ ¸éƒ½åˆ›å»ºä¸€ä¸ªinodeç»“ç‚¹å¯¹è±¡ï¼Œä¸¤ä¸ªfileå¯¹è±¡ï¼Œä¸€ä¸ªç”¨äºè¯»ï¼Œä¸€ä¸ªç”¨äºå†™ã€‚
  */
 int do_pipe(int* fd)
 {
@@ -556,58 +556,58 @@ int do_pipe(int* fd)
 	int i, j;
 
 	error = -ENFILE;
-	f1 = get_empty_filp();//»ñÈ¡ÎÄ¼ş¶ÔÏó1
+	f1 = get_empty_filp();//è·å–æ–‡ä»¶å¯¹è±¡1
 	if (!f1)
 		goto no_files;
 
-	f2 = get_empty_filp();//»ñÈ¡ÎÄ¼ş¶ÔÏó2
+	f2 = get_empty_filp();//è·å–æ–‡ä»¶å¯¹è±¡2
 	if (!f2)
 		goto close_f1;
 
-	inode = get_pipe_inode();//»ñÈ¡pipeµÄinode½áµã
+	inode = get_pipe_inode();//è·å–pipeçš„inodeç»“ç‚¹
 	if (!inode)
 		goto close_f12;
 
-	error = get_unused_fd();//»ñÈ¡Ã»ÓĞÊ¹ÓÃµÄfd1
+	error = get_unused_fd();//è·å–æ²¡æœ‰ä½¿ç”¨çš„fd1
 	if (error < 0)
 		goto close_f12_inode;
 	i = error;
 
-	error = get_unused_fd();//»ñÈ¡Ã»ÓĞÊ¹ÓÃµÄfd2
+	error = get_unused_fd();//è·å–æ²¡æœ‰ä½¿ç”¨çš„fd2
 	if (error < 0)
 		goto close_f12_inode_i;
 	j = error;
 
 	error = -ENOMEM;
-	sprintf(name, "[%lu]", inode->i_ino);//ÉèÖÃË÷Òı½ÚµãºÅ
+	sprintf(name, "[%lu]", inode->i_ino);//è®¾ç½®ç´¢å¼•èŠ‚ç‚¹å·
 	this.name = name;
 	this.len = strlen(name);
 	this.hash = inode->i_ino; /* will go */
-	dentry = d_alloc(pipe_mnt->mnt_sb->s_root, &this); //»ñÈ¡Ò»¸öÄ¿Â¼¶ÔÏó
+	dentry = d_alloc(pipe_mnt->mnt_sb->s_root, &this); //è·å–ä¸€ä¸ªç›®å½•å¯¹è±¡
 	if (!dentry)
 		goto close_f12_inode_i_j;
-	dentry->d_op = &pipefs_dentry_operations;//°ÑÄ¿Â¼¶ÔÏóºÍinode½áµãÁªÏµÔÚÒ»Æğ
+	dentry->d_op = &pipefs_dentry_operations;//æŠŠç›®å½•å¯¹è±¡å’Œinodeç»“ç‚¹è”ç³»åœ¨ä¸€èµ·
 	d_add(dentry, inode);
 	f1->f_vfsmnt = f2->f_vfsmnt = mntget(mntget(pipe_mnt));
 	f1->f_dentry = f2->f_dentry = dget(dentry);
 
-	/* ¸ø¶ÁÃèÊö·ûµÄÎÄ¼ş¶ÔÏó¸³Öµread file */
-	f1->f_pos = f2->f_pos = 0;//¶ÁµÄÎ»ÖÃ´Ó0Æ«ÒÆÁ¿¿ªÊ¼
-	f1->f_flags = O_RDONLY;//Ö»¶Á
-	f1->f_op = &read_pipe_fops;//¶Á²Ù×÷Ê±Ö´ĞĞµÄº¯Êı
-	f1->f_mode = 1;//¶ÁÄ£Ê½
+	/* ç»™è¯»æè¿°ç¬¦çš„æ–‡ä»¶å¯¹è±¡èµ‹å€¼read file */
+	f1->f_pos = f2->f_pos = 0;//è¯»çš„ä½ç½®ä»0åç§»é‡å¼€å§‹
+	f1->f_flags = O_RDONLY;//åªè¯»
+	f1->f_op = &read_pipe_fops;//è¯»æ“ä½œæ—¶æ‰§è¡Œçš„å‡½æ•°
+	f1->f_mode = 1;//è¯»æ¨¡å¼
 	f1->f_version = 0;
 
 	/* write file */
-	f2->f_flags = O_WRONLY;//Ö»Ğ´
-	f2->f_op = &write_pipe_fops; //Ğ´²Ù×÷Ö´ĞĞº¯Êı
-	f2->f_mode = 2; //Ğ´Ä£Ê½
+	f2->f_flags = O_WRONLY;//åªå†™
+	f2->f_op = &write_pipe_fops; //å†™æ“ä½œæ‰§è¡Œå‡½æ•°
+	f2->f_mode = 2; //å†™æ¨¡å¼
 	f2->f_version = 0;
 
-	fd_install(i, f1);//¸øÎÄ¼ş¶ÔÏóf1ÖĞµÄfd¸³Öµ
-	fd_install(j, f2);//¸øÎÄ¼ş¶ÔÏóf2ÖĞµÄfd¸³Öµ
-	fd[0] = i; //°ÑÖµ¸³¸øÓÃ»§¿Õ¼ä
-	fd[1] = j;//°ÑÖµ¸³¸øÓÃ»§¿Õ¼ä
+	fd_install(i, f1);//ç»™æ–‡ä»¶å¯¹è±¡f1ä¸­çš„fdèµ‹å€¼
+	fd_install(j, f2);//ç»™æ–‡ä»¶å¯¹è±¡f2ä¸­çš„fdèµ‹å€¼
+	fd[0] = i; //æŠŠå€¼èµ‹ç»™ç”¨æˆ·ç©ºé—´
+	fd[1] = j;//æŠŠå€¼èµ‹ç»™ç”¨æˆ·ç©ºé—´
 	return 0;
 
 close_f12_inode_i_j:
@@ -643,10 +643,10 @@ static int pipefs_statfs(struct super_block* sb, struct statfs* buf)
 static struct super_operations pipefs_ops = {
 	statfs:		pipefs_statfs,
 };
-//¹ÜµÀ³¬¼¶¿é
+//ç®¡é“è¶…çº§å—
 static struct super_block* pipefs_read_super(struct super_block* sb, void* data, int silent)
 {
-	struct inode* root = new_inode(sb);//Éú³É¹ÜµÀÎÄ¼şÏµÍ³µÄ¸ùÄ¿Â¼µÄÄÚ´æinode
+	struct inode* root = new_inode(sb);//ç”Ÿæˆç®¡é“æ–‡ä»¶ç³»ç»Ÿçš„æ ¹ç›®å½•çš„å†…å­˜inode
 	if (!root)
 		return NULL;
 	root->i_mode = S_IFDIR | S_IRUSR | S_IWUSR;
@@ -655,14 +655,14 @@ static struct super_block* pipefs_read_super(struct super_block* sb, void* data,
 	sb->s_blocksize = 1024;
 	sb->s_blocksize_bits = 10;
 	sb->s_magic = PIPEFS_MAGIC;
-	sb->s_op = &pipefs_ops; //ÉèÖÃ³¬¼¶¿ésbµÄs_obÓòµÄÖµÎªpipefs_ops½á¹¹µÄÖ¸Õë¡£
-	sb->s_root = d_alloc(NULL, &(const struct qstr) { "pipe:", 5, 0 });//ÉèÖÃ³¬¼¶¿éµÄs_rootÓò£¬s_rootÓòµÄÀàĞÍÊÇstruct dentry*,Ö¸Ïò¸ùÄ¿Â¼µÄ¶ÔÏó
+	sb->s_op = &pipefs_ops; //è®¾ç½®è¶…çº§å—sbçš„s_obåŸŸçš„å€¼ä¸ºpipefs_opsç»“æ„çš„æŒ‡é’ˆã€‚
+	sb->s_root = d_alloc(NULL, &(const struct qstr) { "pipe:", 5, 0 });//è®¾ç½®è¶…çº§å—çš„s_rootåŸŸï¼Œs_rootåŸŸçš„ç±»å‹æ˜¯struct dentry*,æŒ‡å‘æ ¹ç›®å½•çš„å¯¹è±¡
 	if (!sb->s_root) {
 		iput(root);
 		return NULL;
 	}
 	sb->s_root->d_sb = sb;
-	sb->s_root->d_parent = sb->s_root;//½«¸Õ·ÖÅäµÄÄ¿Â¼Ïî¶ÔÏóÓëÇ°ÃæÉú³ÉµÄ¸ùÄ¿Â¼inodeÁ¬½ÓÆğÀ´
+	sb->s_root->d_parent = sb->s_root;//å°†åˆšåˆ†é…çš„ç›®å½•é¡¹å¯¹è±¡ä¸å‰é¢ç”Ÿæˆçš„æ ¹ç›®å½•inodeè¿æ¥èµ·æ¥
 	d_instantiate(sb->s_root, root);
 	return sb;
 }
