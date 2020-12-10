@@ -1,4 +1,4 @@
-/*
+﻿/*
  * linux/ipc/util.h
  * Copyright (C) 1999 Christoph Rohland
  *
@@ -23,7 +23,7 @@ struct ipc_ids {
 	struct ipc_id* entries;
 };
 
-/* IPC�������������ͬ��IPC��ʽ�ܽṹ�� */
+/* IPC管理，存放所有同种IPC方式总结构体 */
 struct ipc_id {
 	struct kern_ipc_perm* p;
 };
@@ -89,6 +89,10 @@ extern inline void ipc_unlock(struct ipc_ids* ids, int id)
 
 extern inline int ipc_buildid(struct ipc_ids* ids, int id, int seq)
 {
+	/* SEQ_MULTIPLIER是可分配的最大资源数，seq为位置序列号，id为在ids->entries->p[id]的位置索引值。
+	 * 而每分配一个资源，seq加1，这样就保证后面分配的标志符号总是比前面的要大，
+	 * 除非是seq超过最大值seq_max，最大限度的减小了错误引用资源的概率。
+	 */
 	return SEQ_MULTIPLIER*seq + id;
 }
 

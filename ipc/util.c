@@ -147,26 +147,26 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
 {
 	int id;
 
-	size = grow_ary(ids,size);
-	for (id = 0; id < size; id++) {
+	size = grow_ary(ids,size); // 对动态数组进行调整
+	for (id = 0; id < size; id++) { // 查找空的数组项
 		if(ids->entries[id].p == NULL)
 			goto found;
 	}
 	return -1;
 found:
-	ids->in_use++;
+	ids->in_use++; // 使用资源数加1
 	if (id > ids->max_id)
 		ids->max_id = id;
 
 	new->cuid = new->uid = current->euid;
 	new->gid = new->cgid = current->egid;
 
-	new->seq = ids->seq++;
+	new->seq = ids->seq++; // 每分配个资源，位置序列号加1，它用来计算信号量集标识符
 	if(ids->seq > ids->seq_max)
 		ids->seq = 0;
 
 	spin_lock(&ids->ary);
-	ids->entries[id].p = new;
+	ids->entries[id].p = new; // 插入到sem_ids.entries->p中
 	return id;
 }
 

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * i386 semaphore implementation.
  *
  * (C) Copyright 1999 Linus Torvalds

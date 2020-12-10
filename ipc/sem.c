@@ -111,7 +111,51 @@ void __init sem_init (void)
 #endif
 }
 
-static int newary (key_t key, int nsems, int semflg)
+/**
+ * @brief 创建信号量集
+ * @param key key
+ * @param nsems 信号量数
+ * @param semflg semflg
+ * 
+ * @return 成功返回信号量标识符；失败返回错误代码
+ */
+static int newary(key_t key, int nsems, int semflg)
+{
+	int id;
+	struct sem_array* sma;
+	int size;
+
+	if (!nsems)
+		return -EINVAL;
+	if (used_sems + nsems > sc_semmns)
+		return -ENOSPC;
+
+	size = sizeof(*sma) + nsems * sizeof(struct sem);
+	sma = (struct sem_array*)ipc_alloc(size);
+	if (!sma) {
+		return -ENOMEM;
+	}
+	memset(sma, 0, size);
+	id = ipc_addid(&sem_ids, &sma->sem_perm, sc_semmni);
+	if (id == -1) {
+		ipc_free(sma, size);
+		return -ENOSPC;
+	}
+	used_sems += nsems;
+
+	sma->sem_perm.mode = (semflg & S_IRWXUGO);
+	sma->sem_perm.key = key;
+
+	sma->sem_base = (struct sem*)&sma[1];
+	/* sma->sem_pending = NULL; */
+	sma->sem_pending_last = &sma->sem_pending;
+	/* sma->undo = NULL; */
+	sma->sem_nsems = nsems;
+	sma->sem_ctime = CURRENT_TIME;
+	sem_unlock(id);
+
+	return sem_buildid(id, sma->sem_perm.seq);
+}
 /**
  * @brief 创建信号量
  * @param key 信号量标识符
@@ -132,7 +176,7 @@ asmlinkage long sys_semget (key_t key, int nsems, int semflg)
 	
 	// 异常检测
 	if (key == IPC_PRIVATE) {
-		err = newary(key, nsems, semflg);
+		err = newary(key, nsems, semflg); // 创建信号量集
 	} else if ((id = ipc_findkey(&sem_ids, key)) == -1) {  /* key not used */
 		if (!(semflg & IPC_CREAT))
 			err = -ENOENT;
@@ -150,7 +194,7 @@ asmlinkage long sys_semget (key_t key, int nsems, int semflg)
 		else if (ipcperms(&sma->sem_perm, semflg))
 			err = -EACCES;
 		else
-			err = sem_buildid(id, sma->sem_perm.seq); //返回id
+			err = sem_buildid(id, sma->sem_perm.seq);  // 若信号量集已经存在，则返回信号量集的标识符id
 		sem_unlock(id);
 	}
 
@@ -209,11 +253,17 @@ static inline void remove_from_queue (struct sem_array * sma,
 	q->prev = NULL; /* mark as removed */
 }
 
-/*
- * Determine whether a sequence of semaphore operations would succeed
- * all at once. Return 0 if yes, 1 if need to sleep, else return error code.
+/**
+ * @brief 判断一系列信号量操作是否会同时成功。
+ * @param sma 信号量数组
+ * @param sops sembuf
+ * @param nsops op操作数
+ * @param un undo操作
+ * @param pid 进程id
+ * @param do_undo 是否执行undo
+ * 
+ * @return 如果是，返回0，如果需要睡眠，返回1，否则返回错误代码。
  */
-
 static int try_atomic_semop (struct sem_array * sma, struct sembuf * sops,
 			     int nsops, struct sem_undo *un, int pid,
 			     int do_undo)
@@ -223,15 +273,15 @@ static int try_atomic_semop (struct sem_array * sma, struct sembuf * sops,
 	struct sem * curr;
 
 	for (sop = sops; sop < sops + nsops; sop++) {
-		curr = sma->sem_base + sop->sem_num;
+		curr = sma->sem_base + sop->sem_num;  // 找到要进行操作的信号量
 		sem_op = sop->sem_op;
 
-		if (!sem_op && curr->semval)
-			goto would_block;
+		if (!sem_op && curr->semval) // sop->sem_op == 0且信号量的值curr->semval != 0，则进程被阻塞
+			goto would_block; // 如果sem_op的值为0，则操作将暂时阻塞，直到信号量的值变为0。
 
 		curr->sempid = (curr->sempid << 16) | pid;
 		curr->semval += sem_op;
-		if (sop->sem_flg & SEM_UNDO)
+		if (sop->sem_flg & SEM_UNDO) // 进行保存调整数组，这个在进程异常退出后，用来释放其持有的信号量
 		{
 			int undo = un->semadj[sop->sem_num] - sem_op;
 			/*
@@ -241,7 +291,7 @@ static int try_atomic_semop (struct sem_array * sma, struct sembuf * sops,
 			{
 				/* Don't undo the undo */
 				sop->sem_flg &= ~SEM_UNDO;
-				goto out_of_range;
+				goto out_of_range; // 范围越界，跳出循环并对已经进行的操作进行还原
 			}
 			un->semadj[sop->sem_num] = undo;
 		}
@@ -274,7 +324,7 @@ would_block:
 undo:
 	while (sop >= sops) {
 		curr = sma->sem_base + sop->sem_num;
-		curr->semval -= sop->sem_op;
+		curr->semval -= sop->sem_op; // semval - op
 		curr->sempid >>= 16;
 
 		if (sop->sem_flg & SEM_UNDO)
@@ -285,8 +335,8 @@ undo:
 	return result;
 }
 
-/* Go through the pending queue for the indicated semaphore
- * looking for tasks that can be completed.
+/**
+ * @brief 遍历指定的信号量的挂起队列，以查找可以完成的任务。
  */
 static void update_queue (struct sem_array * sma)
 {
@@ -301,7 +351,7 @@ static void update_queue (struct sem_array * sma)
 		error = try_atomic_semop(sma, q->sops, q->nsops,
 					 q->undo, q->pid, q->alter);
 
-		/* Does q->sleeper still need to sleep? */
+		// 查看是否有可以唤醒的进程，若有的话返回0，并将其移出等待队列，并唤醒
 		if (error <= 0) {
 				/* Found one, wake it up */
 			wake_up_process(q->sleeper);
@@ -632,9 +682,6 @@ out_free:
 	return err;
 }
 
-/**
- * @brief 结构体 - 信号量缓冲区
- */
 struct sem_setbuf {
 	uid_t	uid;
 	gid_t	gid;
@@ -816,10 +863,12 @@ static int alloc_undo(struct sem_array *sma, struct sem_undo** unp, int semid, i
 /**
  * @brief 改变信号量的值
  * @param semid （由semget返回的）信号量标识符
- * @param tsops
- * @param nsop op数量
+ * @param tsops 待操作op - sembuf数组
+ * @param nsop op数量（数组大小）
  *
  * @return
+ *		成功返回信号量标识符
+ *		失败返回错误代码
  */
 asmlinkage long sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 {
@@ -836,6 +885,8 @@ asmlinkage long sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 		return -EINVAL;
 	if (nsops > sc_semopm)
 		return -E2BIG;
+
+	// 首先在系统内核内开辟一段空间，然后将要操作的sembuf由用户空间复制到内核空间
 	if(nsops > SEMOPM_FAST) {
 		sops = kmalloc(sizeof(*sops)*nsops,GFP_KERNEL);
 		if(sops==NULL)
@@ -869,6 +920,7 @@ asmlinkage long sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 	error = -EACCES;
 	if (ipcperms(&sma->sem_perm, alter ? S_IWUGO : S_IRUGO))
 		goto out_unlock_free;
+	// undo操作
 	if (undos) {
 		/* Make sure we have an undo structure
 		 * for this process and this semaphore set.
@@ -889,15 +941,15 @@ asmlinkage long sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 		}
 	} else
 		un = NULL;
-
-	error = try_atomic_semop (sma, sops, nsops, un, current->pid, 0);
+	// 判断原子性 - 一系列信号量操作是否同时成功
+	error = try_atomic_semop(sma, sops, nsops, un, current->pid, 0);
 	if (error <= 0)
-		goto update;
+		goto update; // 更新等待队列
 
 	/* We need to sleep on this operation, so we put the current
 	 * task into the pending queue and go to sleep.
 	 */
-		
+	// 队列属性设置/更新
 	queue.sma = sma;
 	queue.sops = sops;
 	queue.nsops = nsops;
@@ -906,10 +958,10 @@ asmlinkage long sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 	queue.alter = decrease;
 	queue.id = semid;
 	if (alter)
-		append_to_queue(sma ,&queue);
+		append_to_queue(sma ,&queue); // 放入队列
 	else
 		prepend_to_queue(sma ,&queue);
-	current->semsleeping = &queue;
+	current->semsleeping = &queue; // 睡眠信号量
 
 	for (;;) {
 		struct sem_array* tmp;

@@ -1,38 +1,38 @@
-#ifndef _LINUX_SEM_H
+ï»¿#ifndef _LINUX_SEM_H
 #define _LINUX_SEM_H
 
 #include <linux/ipc.h>
 
-/* semop ²Ù×÷·û */
-#define SEM_UNDO        0x1000  /* ÍË³öÊ±³·Ïú²Ù×÷ */
+/* semop æ“ä½œç¬¦ */
+#define SEM_UNDO        0x1000  /* é€€å‡ºæ—¶æ’¤é”€æ“ä½œ */
 
-/* semctl ÃüÁî¶¨Òå */
-#define GETPID  11       /* »ñÈ¡ĞÅºÅÁ¿PID */
-#define GETVAL  12       /* »ñÈ¡ĞÅºÅÁ¿Öµ's */
-#define GETALL  13       /* »ñÈ¡ËùÓĞĞÅºÅÁ¿ */
-#define GETNCNT 14       /* »ñÈ¡ĞÅºÅÁ¿NÊı */
-#define GETZCNT 15       /* »ñÈ¡ĞÅºÅÁ¿ZÊı */
-#define SETVAL  16       /* ÖÃĞÅºÅÁ¿Öµ */
-#define SETALL  17       /* ÖÃËùÓĞĞÅºÅÁ¿'s */
+/* semctl å‘½ä»¤å®šä¹‰ */
+#define GETPID  11       /* è·å–ä¿¡å·é‡PID */
+#define GETVAL  12       /* è·å–ä¿¡å·é‡å€¼'s */
+#define GETALL  13       /* è·å–æ‰€æœ‰ä¿¡å·é‡ */
+#define GETNCNT 14       /* è·å–ä¿¡å·é‡Næ•° */
+#define GETZCNT 15       /* è·å–ä¿¡å·é‡Zæ•° */
+#define SETVAL  16       /* ç½®ä¿¡å·é‡å€¼ */
+#define SETALL  17       /* ç½®æ‰€æœ‰ä¿¡å·é‡'s */
 
-/* ipcs ¿ØÖÆÃüÁî */
+/* ipcs æ§åˆ¶å‘½ä»¤ */
 #define SEM_STAT 18
 #define SEM_INFO 19
 
 /**
- * @brief ½á¹¹Ìå - ¹ÜÀíĞÅºÅÁ¿£¬ĞÅºÅÁ¿È«¾Ö½á¹¹Ìå
- * Ô­×÷Õß×¢£ºObsolete, used only for backwards compatibility and libc5 compiles
- * ·­Òë£º×÷·Ï£¬½öÓÃÓÚÏòºó¼æÈİºÍlibc5±àÒë
+ * @brief ç»“æ„ä½“ - ç®¡ç†ä¿¡å·é‡ï¼Œä¿¡å·é‡å…¨å±€ç»“æ„ä½“
+ * åŸä½œè€…æ³¨ï¼šObsolete, used only for backwards compatibility and libc5 compiles
+ * ç¿»è¯‘ï¼šä½œåºŸï¼Œä»…ç”¨äºå‘åå…¼å®¹å’Œlibc5ç¼–è¯‘
  */
 struct semid_ds {
-	struct ipc_perm	sem_perm;				/* ĞÅºÅÁ¿IPCÈ¨ÏŞ */
-	__kernel_time_t	sem_otime;				/* ×îºóÒ»´ÎsemopÊ±¼ä */
-	__kernel_time_t	sem_ctime;				/* ×îºóÒ»´Î¸Ä¶¯time */
-	struct sem	*sem_base;					/* Ö¸ÏòÊı×éÖĞµÚÒ»¸öĞÅºÅÁ¿µÄÖ¸Õë */
-	struct sem_queue *sem_pending;			/* ´ı´¦ÀíĞÅºÅÁ¿¶ÓÁĞ */
+	struct ipc_perm	sem_perm;				/* ä¿¡å·é‡IPCæƒé™ */
+	__kernel_time_t	sem_otime;				/* æœ€åä¸€æ¬¡semopæ—¶é—´ */
+	__kernel_time_t	sem_ctime;				/* æœ€åä¸€æ¬¡æ”¹åŠ¨time */
+	struct sem	*sem_base;					/* æŒ‡å‘æ•°ç»„ä¸­ç¬¬ä¸€ä¸ªä¿¡å·é‡çš„æŒ‡é’ˆ */
+	struct sem_queue *sem_pending;			/* å¾…å¤„ç†ä¿¡å·é‡é˜Ÿåˆ— */
 	struct sem_queue **sem_pending_last;	/* last pending operation? */
-	struct sem_undo	*undo;					/* Óû³·ÏúÇëÇóµÄÊı×é */
-	unsigned short	sem_nsems;				/* Êı×éÖĞĞÅºÅÁ¿µÄÊıÁ¿ */
+	struct sem_undo	*undo;					/* æ¬²æ’¤é”€è¯·æ±‚çš„æ•°ç»„ */
+	unsigned short	sem_nsems;				/* æ•°ç»„ä¸­ä¿¡å·é‡çš„æ•°é‡ */
 };
 
 /* Include the definition of semid64_ds */
@@ -40,28 +40,28 @@ struct semid_ds {
 
 /* semop system calls takes an array of these. */
 /**
- * @brief ½á¹¹Ìå - semopÏµÍ³µ÷ÓÃ½á¹¹ÌåÊı×é?
+ * @brief ç»“æ„ä½“ - semopç³»ç»Ÿè°ƒç”¨ç»“æ„ä½“æ•°ç»„?
  */
 struct sembuf {
-	unsigned short  sem_num;	/* Êı×éÖĞĞÅºÅÁ¿Ë÷Òı */
-	short			sem_op;		/* ĞÅºÅÁ¿²Ù×÷:-1 -> µÈ´ı²Ù×÷£»1 -> ·¢ËÍĞÅºÅ²Ù×÷ */
-	short			sem_flg;	/* ²Ù×÷·û£¬Í¨³£ÎªSEM_UNDO£¬Ê¹²Ù×÷ÏµÍ³¸ú×ÙĞÅºÅ£¬²¢ÔÚ½ø³ÌÃ»ÓĞÊÍ·Å¸ÃĞÅºÅÁ¿¶øÖÕÖ¹Ê±£¬ÊÍ·ÅĞÅºÅÁ¿ */
+	unsigned short  sem_num;	/* æ•°ç»„ä¸­ä¿¡å·é‡ç´¢å¼• */
+	short			sem_op;		/* ä¿¡å·é‡æ“ä½œ:-1 -> ç­‰å¾…æ“ä½œï¼›1 -> å‘é€ä¿¡å·æ“ä½œ */
+	short			sem_flg;	/* æ“ä½œç¬¦ï¼Œé€šå¸¸ä¸ºSEM_UNDOï¼Œä½¿æ“ä½œç³»ç»Ÿè·Ÿè¸ªä¿¡å·ï¼Œå¹¶åœ¨è¿›ç¨‹æ²¡æœ‰é‡Šæ”¾è¯¥ä¿¡å·é‡è€Œç»ˆæ­¢æ—¶ï¼Œé‡Šæ”¾ä¿¡å·é‡ */
 };
 
 /* arg for semctl system calls. */
 /**
- * @brief ¹²ÓÃÌå - semctlÏµÍ³µ÷ÓÃËùÓÃ²ÎÊı
+ * @brief å…±ç”¨ä½“ - semctlç³»ç»Ÿè°ƒç”¨æ‰€ç”¨å‚æ•°
  */
 union semun {
-	int val;					/* ÓûÖÃµÄĞÅºÅÁ¿Öµ - ÓÃÓÚ SETVAL */
-	struct semid_ds *buf;		/* »º³åÇø - ÓÃÓÚ IPC_STAT & IPC_SET */
-	unsigned short *array;		/* Êı×é - ÓÃÓÚ GETALL & SETALL */
-	struct seminfo *__buf;		/* »º³åÇø -  ÓÃÓÚ IPC_INFO */
+	int val;					/* æ¬²ç½®çš„ä¿¡å·é‡å€¼ - ç”¨äº SETVAL */
+	struct semid_ds *buf;		/* ç¼“å†²åŒº - ç”¨äº IPC_STAT & IPC_SET */
+	unsigned short *array;		/* æ•°ç»„ - ç”¨äº GETALL & SETALL */
+	struct seminfo *__buf;		/* ç¼“å†²åŒº -  ç”¨äº IPC_INFO */
 	void *__pad;
 };
 
 /**
- * @brief ½á¹¹Ìå - ĞÅºÅÁ¿ĞÅÏ¢
+ * @brief ç»“æ„ä½“ - ä¿¡å·é‡ä¿¡æ¯
  */
 struct  seminfo {
 	int semmap;
@@ -92,52 +92,52 @@ struct  seminfo {
 //#ifdef __KERNEL__
 
 /**
- * @brief ½á¹¹Ìå - ĞÅºÅÁ¿
+ * @brief ç»“æ„ä½“ - ä¿¡å·é‡
  */
 struct sem {
-	int	semval;		/* ĞÅºÅÁ¿Öµ */
-	int	sempid;		/* ×îºóÒ»´Î²Ù×÷±¾ĞÅºÅµÄ½ø³ÌPID */
+	int	semval;		/* ä¿¡å·é‡å€¼ */
+	int	sempid;		/* æœ€åä¸€æ¬¡æ“ä½œæœ¬ä¿¡å·çš„è¿›ç¨‹PID */
 };
 
 /**
- * @brief ½á¹¹Ìå - ĞÅºÅÁ¿Êı×é
+ * @brief ç»“æ„ä½“ - ä¿¡å·é‡æ•°ç»„
  */
 struct sem_array {
-	struct kern_ipc_perm	sem_perm;				/* ĞÅºÅÁ¿IPCÈ¨ÏŞ */
-	time_t					sem_otime;				/* ×îºóÒ»´ÎĞÅºÅÁ¿²Ù×÷Ê±¼ä */
-	time_t					sem_ctime;				/* ×îºóÒ»´Î¸Ä¶¯Ê±¼ä */
-	struct sem				*sem_base;				/* ĞÅºÅÁ¿Êı×é */
-	struct sem_queue		*sem_pending;			/* ´ı²Ù×÷ĞÅºÅÁ¿¶ÓÁĞ */
-	struct sem_queue		**sem_pending_last;		/* ×îºóÒ»¸ö´ı´¦Àí²Ù×÷ */
-	struct sem_undo			*undo;					/* Óû³·ÏúÇëÇóµÄÊı×é */
-	unsigned long			sem_nsems;				/* ĞÅºÅÁ¿¼¯ÖĞµÄĞÅºÅÁ¿Êı */
+	struct kern_ipc_perm	sem_perm;				/* ä¿¡å·é‡IPCæƒé™ */
+	time_t					sem_otime;				/* æœ€åä¸€æ¬¡ä¿¡å·é‡æ“ä½œæ—¶é—´ */
+	time_t					sem_ctime;				/* æœ€åä¸€æ¬¡æ”¹åŠ¨æ—¶é—´ */
+	struct sem				*sem_base;				/* ä¿¡å·é‡æ•°ç»„ */
+	struct sem_queue		*sem_pending;			/* å¾…æ“ä½œä¿¡å·é‡é˜Ÿåˆ— */
+	struct sem_queue		**sem_pending_last;		/* æœ€åä¸€ä¸ªå¾…å¤„ç†æ“ä½œ */
+	struct sem_undo			*undo;					/* æ¬²æ’¤é”€è¯·æ±‚çš„æ•°ç»„ */
+	unsigned long			sem_nsems;				/* ä¿¡å·é‡é›†ä¸­çš„ä¿¡å·é‡æ•° */
 };
 
 /**
- * @brief ½á¹¹Ìå - ĞÅºÅÁ¿¶ÓÁĞ£¬ÓÃÓÚÏµÍ³ÖĞµÄË¯Ãß½ø³Ì
+ * @brief ç»“æ„ä½“ - ä¿¡å·é‡é˜Ÿåˆ—ï¼Œç”¨äºç³»ç»Ÿä¸­çš„ç¡çœ è¿›ç¨‹
  */
 struct sem_queue {
-	struct sem_queue*	next;	 /* ÏÂÒ»¸öĞÅºÅÁ¿¶ÓÁĞ */
-	struct sem_queue**  prev;	 /* ÉÏÒ»¸öĞÅºÅÁ¿¶ÓÁĞ, *(q->prev) == q */
-	struct task_struct*	sleeper; /* µ±Ç°½ø³Ì */
-	struct sem_undo* 	undo;	 /* ³·ÏúÇëÇó */
-	int    				pid;	 /* ÇëÇó½ø³ÌPID */
-	int    				status;	 /* ²Ù×÷Íê³É×´Ì¬ */
-	struct sem_array* 	sma;	 /* ÓÃÓÚ²Ù×÷µÄĞÅºÅÁ¿Êı×é */
-	int					id;		 /* ÄÚ²¿ĞÅºÅÁ¿ID */
-	struct sembuf* 		sops;	 /* ´ı´¦Àí²Ù×÷Êı×é */
-	int					nsops;	 /* ×Ü²Ù×÷ÊıÁ¿ */
+	struct sem_queue*	next;	 /* ä¸‹ä¸€ä¸ªä¿¡å·é‡é˜Ÿåˆ— */
+	struct sem_queue**  prev;	 /* ä¸Šä¸€ä¸ªä¿¡å·é‡é˜Ÿåˆ—, *(q->prev) == q */
+	struct task_struct*	sleeper; /* å½“å‰è¿›ç¨‹ */
+	struct sem_undo* 	undo;	 /* æ’¤é”€è¯·æ±‚ */
+	int    				pid;	 /* è¯·æ±‚è¿›ç¨‹PID */
+	int    				status;	 /* æ“ä½œå®ŒæˆçŠ¶æ€ */
+	struct sem_array* 	sma;	 /* ç”¨äºæ“ä½œçš„ä¿¡å·é‡æ•°ç»„ */
+	int					id;		 /* å†…éƒ¨ä¿¡å·é‡ID */
+	struct sembuf* 		sops;	 /* å¾…å¤„ç†æ“ä½œæ•°ç»„ */
+	int					nsops;	 /* æ€»æ“ä½œæ•°é‡ */
 	int					alter;	 /* operation will alter semaphore */
 };
 
 /**
- * @brief ½á¹¹Ìå - ĞÅºÅÁ¿³·ÏúÇëÇóÁĞ±í£¬ÔÚ½ø³Ì½áÊøÊ±×Ô¶¯Ö´ĞĞ
+ * @brief ç»“æ„ä½“ - ä¿¡å·é‡æ’¤é”€è¯·æ±‚åˆ—è¡¨ï¼Œåœ¨è¿›ç¨‹ç»“æŸæ—¶è‡ªåŠ¨æ‰§è¡Œ
  */
 struct sem_undo {
-	struct sem_undo*	proc_next;	/* ½ø³ÌµÄÏÂÒ»¸ö³·ÏúÇëÇó */
-	struct sem_undo*	id_next;	/* ĞÅºÅÁ¿¼¯µÄÏÂÒ»¸ö³·ÏúÇëÇó */
-	int					semid;		/* ĞÅºÅÁ¿¼¯id */
-	short*				semadj;		/* ĞÅºÅÁ¿µÄµ÷ÕûÊı×é */
+	struct sem_undo*	proc_next;	/* è¿›ç¨‹çš„ä¸‹ä¸€ä¸ªæ’¤é”€è¯·æ±‚ */
+	struct sem_undo*	id_next;	/* ä¿¡å·é‡é›†çš„ä¸‹ä¸€ä¸ªæ’¤é”€è¯·æ±‚ */
+	int					semid;		/* ä¿¡å·é‡é›†id */
+	short*				semadj;		/* ä¿¡å·é‡çš„è°ƒæ•´æ•°ç»„ */
 };
 
 asmlinkage long sys_semget (key_t key, int nsems, int semflg);
