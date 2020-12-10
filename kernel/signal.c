@@ -1,4 +1,4 @@
-/*
+﻿/*
  *  linux/kernel/signal.c
  *
  *  Copyright (C) 1991, 1992  Linus Torvalds
@@ -13,12 +13,11 @@
 #include <linux/smp_lock.h>
 #include <linux/init.h>
 #include <linux/sched.h>
-
 #include <asm/uaccess.h>
 
-/*
- * SLAB caches for signal bits.
- */
+ /*
+  * SLAB caches for signal bits.
+  */
 
 #define DEBUG_SIG 0
 
@@ -28,62 +27,76 @@
 #define SIG_SLAB_DEBUG	0
 #endif
 
-static kmem_cache_t *sigqueue_cachep;
+  // ÐÅºÅ¶ÓÁÐÕ¼ÓÃµÄÄÚ´æÇøÓò¡£
+static kmem_cache_t* sigqueue_cachep;
 
+// ÐÅºÅ¶ÓÁÐÖÐµÄÐÅºÅ¼ÆÊý¡£
 atomic_t nr_queued_signals;
+// ÐÅºÅ¶ÓÁÐÖÐÄÜÈÝÄÉµÄ×î´óÐÅºÅÊý¡£
 int max_queued_signals = 1024;
 
+/*
+ *@briefÐÅºÅ¹ÜÀíÏµÍ³³õÊ¼»¯
+ */
 void __init signals_init(void)
 {
 	sigqueue_cachep =
 		kmem_cache_create("sigqueue",
-				  sizeof(struct sigqueue),
-				  __alignof__(struct sigqueue),
-				  SIG_SLAB_DEBUG, NULL, NULL);
+			sizeof(struct sigqueue),
+			__alignof__(struct sigqueue),
+			SIG_SLAB_DEBUG, NULL, NULL);
 	if (!sigqueue_cachep)
 		panic("signals_init(): cannot create sigqueue SLAB cache");
 }
 
 
 /* Given the mask, find the first available signal that should be serviced. */
-
+/*
+ *@brief¸ø¶¨ÑÚÂë£¬ÕÒµ½ÏÂÒ»¸öÓ¦¸Ã±»´¦ÀíµÄÐÅºÅ¡£
+ */
 static int
-next_signal(struct task_struct *tsk, sigset_t *mask)
+next_signal(struct task_struct* tsk, sigset_t* mask)
 {
-	unsigned long i, *s, *m, x;
+	unsigned long i, * s, * m, x;
 	int sig = 0;
-	
-	s = tsk->pending.signal.sig;
-	m = mask->sig;
+
+	s = tsk->pending.signal.sig; //ÐÅºÅ¼¯
+	m = mask->sig;  //ÐÅºÅÑÚÂë
 	switch (_NSIG_WORDS) {
 	default:
-		for (i = 0; i < _NSIG_WORDS; ++i, ++s, ++m)
-			if ((x = *s &~ *m) != 0) {
-				sig = ffz(~x) + i*_NSIG_BPW + 1;
+		for (i = 0; i < _NSIG_WORDS; ++i, ++s, ++m) //´ÓÐÅºÅ¼¯ÖÐÅÅ³ý×èÈûÐÅºÅ
+			if ((x = *s & ~*m) != 0) { //Ñ°ÕÒµÚÒ»¸öÎª0µÄÎ»
+				sig = ffz(~x) + i * _NSIG_BPW + 1; //ÕÒµ½ÐÅºÅ¼¯ÖÐµÄµÚÒ»¸öÐÅºÅ
 				break;
 			}
 		break;
-
-	case 2: if ((x = s[0] &~ m[0]) != 0)
-			sig = 1;
-		else if ((x = s[1] &~ m[1]) != 0)
-			sig = _NSIG_BPW + 1;
-		else
-			break;
+		//°üÀ¨ÊµÊ±ÐÅºÅ
+	case 2: if ((x = s[0] & ~m[0]) != 0)
+		sig = 1;
+		  else if ((x = s[1] & ~m[1]) != 0)
+		sig = _NSIG_BPW + 1;
+		  else
+		break;
 		sig += ffz(~x);
 		break;
+		// Ö»ÓÐ·ÇÊµÊ±ÐÅºÅ
 
-	case 1: if ((x = *s &~ *m) != 0)
-			sig = ffz(~x) + 1;
+		// ÅÅ³ýÑÚÂëºó£¬´æÔÚÄ¿Ç°±»¹ÒÆðµÄÐÅºÅ
+	case 1: if ((x = *s & ~*m) != 0)
+		sig = ffz(~x) + 1;
 		break;
 	}
-	
-	return sig;
+
+	return sig; //·µ»ØÐÅºÅ
 }
 
-static void flush_sigqueue(struct sigpending *queue)
+/*
+ *@brief Çå¿ÕÐÅºÅ¶ÓÁÐ£¬Å×ÆúÆäÖÐµÄËùÓÐÐÅºÅ²¢ÊÍ·Å×ÊÔ´¡£
+ *
+ */
+static void flush_sigqueue(struct sigpending* queue)
 {
-	struct sigqueue *q, *n;
+	struct sigqueue* q, * n;
 
 	sigemptyset(&queue->signal);
 	q = queue->head;
@@ -102,16 +115,23 @@ static void flush_sigqueue(struct sigpending *queue)
  * Flush all pending signals for a task.
  */
 
+ /*
+  *@brief Çå¿ÕÖ¸¶¨½ø³ÌµÄ´ý´¦ÀíÐÅºÅ¡£. Ëü»áÇåµô t->thread_info->flags ÖÐµÄTIF_SIGPENDING ±êÖ¾,
+  *²¢ÇÒµ÷ÓÃflush_sigqueue °Ñt->pending ºÍ t->signal->shared_pending Çåµô .
+  */
 void
-flush_signals(struct task_struct *t)
+flush_signals(struct task_struct* t)
 {
 	t->sigpending = 0;
 	flush_sigqueue(&t->pending);
 }
 
-void exit_sighand(struct task_struct *tsk)
+/*
+ *@briefÊÍ·ÅÐÅºÅ´¦Àí±í
+ */
+void exit_sighand(struct task_struct* tsk)
 {
-	struct signal_struct * sig = tsk->sig;
+	struct signal_struct* sig = tsk->sig;
 
 	spin_lock_irq(&tsk->sigmask_lock);
 	if (sig) {
@@ -128,12 +148,15 @@ void exit_sighand(struct task_struct *tsk)
  * Flush all handlers for a task.
  */
 
+ /*
+  *@briefÖØÐÂÖ¸¶¨Ä³½ø³ÌµÄÈ«²¿ÐÅºÅ´¦Àí·½Ê½ÎªÄ¬ÈÏ¡£
+  */
 void
-flush_signal_handlers(struct task_struct *t)
+flush_signal_handlers(struct task_struct* t)
 {
 	int i;
-	struct k_sigaction *ka = &t->sig->action[0];
-	for (i = _NSIG ; i != 0 ; i--) {
+	struct k_sigaction* ka = &t->sig->action[0];
+	for (i = _NSIG; i != 0; i--) {
 		if (ka->sa.sa_handler != SIG_IGN)
 			ka->sa.sa_handler = SIG_DFL;
 		ka->sa.sa_flags = 0;
@@ -150,8 +173,13 @@ flush_signal_handlers(struct task_struct *t)
  * allowed.  priv is a pointer to private data that the notifier routine
  * can use to determine if the signal should be blocked or not.  */
 
+ /*
+  *Í¨ÖªÏµÍ³×èÖ¹´Ë¹ý³ÌÖÐµÄËùÓÐÐÅºÅ£¬²¢ÇÒÒªÍ¨ÖªÊÇ·ñÓÐÈÎºÎÐÅºÅÒª±»·¢ËÍ¡£
+  *Èç¹ûÍ¨Öª³ÌÐò½ø³Ì·µ»Ø·ÇÁãÖµ£¬ÔòÐÅºÅ»áÆð×÷ÓÃ¡£ Èç¹ûÍ¨Öª³ÌÐò½ø³Ì·µ»Ø0£¬ÔòÐÅºÅ½«±»×èÖ¹¡£
+  *Ã¿¸ö½ø³ÌÖ»ÔÊÐíÒ»¸ö¿é¡£ privÊÇÖ¸ÏòË½ÓÐÊý¾ÝµÄÖ¸Õë£¬Í¨Öª³ÌÐò¿ÉÒÔÊ¹ÓÃËüÀ´È·¶¨ÊÇ·ñÓ¦×èÖ¹ÐÅºÅ¡£
+  */
 void
-block_all_signals(int (*notifier)(void *priv), void *priv, sigset_t *mask)
+block_all_signals(int (*notifier)(void* priv), void* priv, sigset_t* mask)
 {
 	unsigned long flags;
 
@@ -164,6 +192,9 @@ block_all_signals(int (*notifier)(void *priv), void *priv, sigset_t *mask)
 
 /* Notify the system that blocking has ended. */
 
+/*
+ *@briefÍ¨ÖªÏµÍ³×èÖ¹ÒÑ½áÊø¡£
+ */
 void
 unblock_all_signals(void)
 {
@@ -176,11 +207,14 @@ unblock_all_signals(void)
 	spin_unlock_irqrestore(&current->sigmask_lock, flags);
 }
 
-static int collect_signal(int sig, struct sigpending *list, siginfo_t *info)
+/*
+ *@brief »ØÊÕ¸ÃÐÅºÅËùÕ¼ÓÃµÄÈ«²¿×ÊÔ´¡£
+ */
+static int collect_signal(int sig, struct sigpending* list, siginfo_t* info)
 {
 	if (sigismember(&list->signal, sig)) {
 		/* Collect the siginfo appropriate to this signal.  */
-		struct sigqueue *q, **pp;
+		struct sigqueue* q, ** pp;
 		pp = &list->head;
 		while ((q = *pp) != NULL) {
 			if (q->info.si_signo == sig)
@@ -199,13 +233,13 @@ static int collect_signal(int sig, struct sigpending *list, siginfo_t *info)
 		info->si_uid = 0;
 		return 1;
 
-found_it:
+	found_it:
 		if ((*pp = q->next) == NULL)
 			list->tail = pp;
 
 		/* Copy the sigqueue information and free the queue entry */
 		copy_siginfo(info, &q->info);
-		kmem_cache_free(sigqueue_cachep,q);
+		kmem_cache_free(sigqueue_cachep, q);
 		atomic_dec(&nr_queued_signals);
 
 		/* Non-RT signals can exist multiple times.. */
@@ -218,27 +252,31 @@ found_it:
 		}
 
 		sigdelset(&list->signal, sig);
-found_another:
+	found_another:
 		return 1;
 	}
 	return 0;
 }
 
 /*
- * Dequeue a signal and return the element to the caller, which is 
+ * Dequeue a signal and return the element to the caller, which is
  * expected to free it.
  *
  * All callers must be holding current->sigmask_lock.
  */
 
+
+ /*
+  *@brief °´ÓÅÏÈ¼¶È¡³öÒ»¸öµÚÒ»¸ö¸Ã±»´¦ÀíµÄÐÅºÅ²¢ÊÍ·Å¡£±»ÄÚºËµ÷ÓÃ¡£
+  */
 int
-dequeue_signal(sigset_t *mask, siginfo_t *info)
+dequeue_signal(sigset_t* mask, siginfo_t* info)
 {
 	int sig = 0;
 
 #if DEBUG_SIG
-printk("SIG dequeue (%s:%d): %d ", current->comm, current->pid,
-	signal_pending(current));
+	printk("SIG dequeue (%s:%d): %d ", current->comm, current->pid,
+		signal_pending(current));
 #endif
 
 	sig = next_signal(current, mask);
@@ -254,35 +292,35 @@ printk("SIG dequeue (%s:%d): %d ", current->comm, current->pid,
 
 		if (!collect_signal(sig, &current->pending, info))
 			sig = 0;
-				
+
 		/* XXX: Once POSIX.1b timers are in, if si_code == SI_TIMER,
 		   we need to xchg out the timer overrun values.  */
 	}
 	recalc_sigpending(current);
 
 #if DEBUG_SIG
-printk(" %d -> %d\n", signal_pending(current), sig);
+	printk(" %d -> %d\n", signal_pending(current), sig);
 #endif
 
 	return sig;
 }
 
-static int rm_from_queue(int sig, struct sigpending *s)
+static int rm_from_queue(int sig, struct sigpending* s)
 {
-	struct sigqueue *q, **pp;
+	struct sigqueue* q, ** pp;
 
-	if (!sigismember(&s->signal, sig))
+	if (!sigismember(&s->signal, sig))//±íÊ¾¸ÃÎ»ÊÇ·ñÒÑ¾­ÖÃ1,Ò»°ãÊÇÒÑ¾­,·ñÔòÖ±½Óreturn
 		return 0;
 
-	sigdelset(&s->signal, sig);
+	sigdelset(&s->signal, sig);//Çå³ý¸Ã±êÖ¾Î»
 
 	pp = &s->head;
 
 	while ((q = *pp) != NULL) {
-		if (q->info.si_signo == sig) {
+		if (q->info.si_signo == sig) {//Èç¹û¶ÓÁÐÖÐµÄÐÅºÅµÈÓÚsig(Õë¶ÔÐÂÀàÐÍÐÅºÅ)
 			if ((*pp = q->next) == NULL)
 				s->tail = pp;
-			kmem_cache_free(sigqueue_cachep,q);
+			kmem_cache_free(sigqueue_cachep, q);//É¾³ý
 			atomic_dec(&nr_queued_signals);
 			continue;
 		}
@@ -297,7 +335,11 @@ static int rm_from_queue(int sig, struct sigpending *s)
  *
  * All callers must be holding t->sigmask_lock.
  */
-static int rm_sig_from_queue(int sig, struct task_struct *t)
+
+ /*
+  *@brief¶ªÆúÒÑµ½´ïÐÅºÅÊµÏÖ
+  */
+static int rm_sig_from_queue(int sig, struct task_struct* t)
 {
 	return rm_from_queue(sig, &t->pending);
 }
@@ -305,13 +347,16 @@ static int rm_sig_from_queue(int sig, struct task_struct *t)
 /*
  * Bad permissions for sending the signal
  */
-int bad_signal(int sig, struct siginfo *info, struct task_struct *t)
+ /*
+  *@briefÅÐ¶ÏÐÅºÅµÄ·¢ËÍÊÇ·ñ²»±»ÔÊÐí(ÒòÎªÈ¨ÏÞ²»×ã)¡£
+  */
+int bad_signal(int sig, struct siginfo* info, struct task_struct* t)
 {
 	return (!info || ((unsigned long)info != 1 && SI_FROMUSER(info)))
-	    && ((sig != SIGCONT) || (current->session != t->session))
-	    && (current->euid ^ t->suid) && (current->euid ^ t->uid)
-	    && (current->uid ^ t->suid) && (current->uid ^ t->uid)
-	    && !capable(CAP_KILL);
+		&& ((sig != SIGCONT) || (current->session != t->session))
+		&& (current->euid ^ t->suid) && (current->euid ^ t->uid)
+		&& (current->uid ^ t->suid) && (current->uid ^ t->uid)
+		&& !capable(CAP_KILL);
 }
 
 /*
@@ -320,14 +365,15 @@ int bad_signal(int sig, struct siginfo *info, struct task_struct *t)
  *    = 0 : ignored
  *    > 0 : wake up.
  */
-static int signal_type(int sig, struct signal_struct *signals)
+ //·µ»ØÐÅºÅÀà±ð¡£
+static int signal_type(int sig, struct signal_struct* signals)
 {
 	unsigned long handler;
 
 	if (!signals)
 		return 0;
-	
-	handler = (unsigned long) signals->action[sig-1].sa.sa_handler;
+
+	handler = (unsigned long)signals->action[sig - 1].sa.sa_handler;
 	if (handler > 1)
 		return 1;
 
@@ -338,33 +384,35 @@ static int signal_type(int sig, struct signal_struct *signals)
 	/* Default handler. Normally lethal, but.. */
 	switch (sig) {
 
-	/* Ignored */
+		/* Ignored */
 	case SIGCONT: case SIGWINCH:
 	case SIGCHLD: case SIGURG:
 		return 0;
 
-	/* Implicit behaviour */
+		/* Implicit behaviour */
 	case SIGTSTP: case SIGTTIN: case SIGTTOU:
 		return 1;
 
-	/* Implicit actions (kill or do special stuff) */
+		/* Implicit actions (kill or do special stuff) */
 	default:
 		return -1;
 	}
 }
-		
+
 
 /*
  * Determine whether a signal should be posted or not.
  *
  * Signals with SIG_IGN can be ignored, except for the
- * special case of a SIGCHLD. 
+ * special case of a SIGCHLD.
  *
  * Some signals with SIG_DFL default to a non-action.
  */
-static int ignored_signal(int sig, struct task_struct *t)
+ // ÅÐ¶ÏÒ»¸öÐÅºÅÊÇ·ñÓ¦¸Ã±»ºöÂÔ¡£
+static int ignored_signal(int sig, struct task_struct* t)
 {
 	/* Don't ignore traced or blocked signals */
+	// ²»ºöÂÔ±»¸ú×Ù½ø³Ì½ÓÊÕµ½µÄÐÅºÅÒÔ¼°±»Ä¿±ê½ø³Ì×èÈûµÄÐÅºÅ¡£
 	if ((t->ptrace & PT_PTRACED) || sigismember(&t->blocked, sig))
 		return 0;
 
@@ -375,11 +423,13 @@ static int ignored_signal(int sig, struct task_struct *t)
  * Handle TASK_STOPPED cases etc implicit behaviour
  * of certain magical signals.
  *
- * SIGKILL gets spread out to every thread. 
+ * SIGKILL gets spread out to every thread.
  */
-static void handle_stop_signal(int sig, struct task_struct *t)
+ // Îª×èÈûÌ¬µÄ½ø³Ì´¦ÀíÐÅºÅ
+static void handle_stop_signal(int sig, struct task_struct* t)
 {
 	switch (sig) {
+		//¼ÌÐøÖ´ÐÐ
 	case SIGKILL: case SIGCONT:
 		/* Wake up the process if stopped.  */
 		if (t->state == TASK_STOPPED)
@@ -391,6 +441,7 @@ static void handle_stop_signal(int sig, struct task_struct *t)
 		rm_sig_from_queue(SIGTTIN, t);
 		break;
 
+		// ÒÆ³ýËùÓÐ¼ÌÐøÖ´ÐÐµÄÐÅºÅ
 	case SIGSTOP: case SIGTSTP:
 	case SIGTTIN: case SIGTTOU:
 		/* If we're stopping again, cancel SIGCONT */
@@ -399,9 +450,13 @@ static void handle_stop_signal(int sig, struct task_struct *t)
 	}
 }
 
-static int send_signal(int sig, struct siginfo *info, struct sigpending *signals)
+/*¹ÒÆðÖ¸¶¨ÐÅºÅµÄ¾ßÌåÊµÏÖ£¬±»deliver_signalµ÷ÓÃ¡£½«siginfoÌí¼Óµ½½ø³ÌµÄpendingÐÅºÅ¶ÓÁÐÄ©Î²£¬²¢½«ÏàÓ¦µÄÐÅºÅÎ»ÖÃ1¡£
+ *sig: ÐÅºÅ±àºÅ
+ *info: siginfo: ÊµÊ±ÐÅºÅ 0: ÓÉÓÃ»§Ì¬½ø³Ìµ÷ÓÃ 1: ÄÚºËÌ¬µ÷ÓÃ
+ */
+static int send_signal(int sig, struct siginfo* info, struct sigpending* signals)
 {
-	struct sigqueue * q = NULL;
+	struct sigqueue* q = NULL;//´´½¨Ò»¸öÏà¹Ø¶ÓÁÐ
 
 	/* Real-time signals must be queued if sent by sigqueue, or
 	   some other real-time mechanism.  It is implementation
@@ -411,36 +466,38 @@ static int send_signal(int sig, struct siginfo *info, struct sigpending *signals
 	   make sure at least one signal gets delivered and don't
 	   pass on the info struct.  */
 
+	   // Ôö¼Ó¶ÓÁÐ¼ÆÊý²¢³¢ÊÔ·ÖÅäÄÚ´æµ½¶ÓÁÐÎ²²¿
 	if (atomic_read(&nr_queued_signals) < max_queued_signals) {
 		q = kmem_cache_alloc(sigqueue_cachep, GFP_ATOMIC);
 	}
 
 	if (q) {
 		atomic_inc(&nr_queued_signals);
-		q->next = NULL;
-		*signals->tail = q;
+		q->next = NULL;//ÐÂ´´½¨µÄ,ÉèÖÃÎªnull
+		*signals->tail = q;//Ö¸ÏòÎ²²¿
 		signals->tail = &q->next;
-		switch ((unsigned long) info) {
-			case 0:
-				q->info.si_signo = sig;
-				q->info.si_errno = 0;
-				q->info.si_code = SI_USER;
-				q->info.si_pid = current->pid;
-				q->info.si_uid = current->uid;
-				break;
-			case 1:
-				q->info.si_signo = sig;
-				q->info.si_errno = 0;
-				q->info.si_code = SI_KERNEL;
-				q->info.si_pid = 0;
-				q->info.si_uid = 0;
-				break;
-			default:
-				copy_siginfo(&q->info, info);
-				break;
+		switch ((unsigned long)info) {
+		case 0:
+			q->info.si_signo = sig;
+			q->info.si_errno = 0;
+			q->info.si_code = SI_USER;
+			q->info.si_pid = current->pid;
+			q->info.si_uid = current->uid;
+			break;
+		case 1:
+			q->info.si_signo = sig;
+			q->info.si_errno = 0;
+			q->info.si_code = SI_KERNEL;
+			q->info.si_pid = 0;
+			q->info.si_uid = 0;
+			break;
+		default:
+			copy_siginfo(&q->info, info);//¿½±´Ïà¹ØÐÅÏ¢,µ½¶ÓÁÐ
+			break;
 		}
-	} else if (sig >= SIGRTMIN && info && (unsigned long)info != 1
-		   && info->si_code != SI_USER) {
+	}
+	else if (sig >= SIGRTMIN && info && (unsigned long)info != 1
+		&& info->si_code != SI_USER) {
 		/*
 		 * Queue overflow, abort.  We may abort if the signal was rt
 		 * and sent by user using something other than kill().
@@ -448,7 +505,7 @@ static int send_signal(int sig, struct siginfo *info, struct sigpending *signals
 		return -EAGAIN;
 	}
 
-	sigaddset(&signals->signal, sig);
+	sigaddset(&signals->signal, sig);//½«½ÓÊÕÐÅºÅ,ÏàÓ¦Î»Í¼ÉèÖÃÎª1
 	return 0;
 }
 
@@ -463,13 +520,15 @@ static int send_signal(int sig, struct siginfo *info, struct sigpending *signals
  * No need to set need_resched since signal event passing
  * goes through ->blocked
  */
-static inline void signal_wake_up(struct task_struct *t)
+ // Í¨ÖªÒ»¸ö½ø³ÌÓÐÐÂµÄÐÅºÅµ½À´²¢³¢ÊÔ»½ÐÑµÄÖÐ¼äº¯Êý¡£±»deliver_signalµ÷ÓÃ¡£
+static inline void signal_wake_up(struct task_struct* t)
 {
 	t->sigpending = 1;
 
+	// Ö§³Ö¶àCPUÊ±µÄ¶îÍâ´¦Àí
 #ifdef CONFIG_SMP
 	/*
-	 * If the task is running on a different CPU 
+	 * If the task is running on a different CPU
 	 * force a reschedule on the other CPU to make
 	 * it notice the new signal quickly.
 	 *
@@ -484,69 +543,92 @@ static inline void signal_wake_up(struct task_struct *t)
 	spin_unlock(&runqueue_lock);
 #endif /* CONFIG_SMP */
 
+	// ¼ì²éÄ¿±ê½ø³ÌÊÇ·ñ¿É±»´ò¶Ï
 	if (t->state & TASK_INTERRUPTIBLE) {
 		wake_up_process(t);
 		return;
 	}
 }
 
-static int deliver_signal(int sig, struct siginfo *info, struct task_struct *t)
+// ³¢ÊÔ·¢ËÍÐÅºÅµ½½ø³Ì²¢»½ÐÑµÄÖÐ¼äº¯Êý¡£±»send_sig_infoµ÷ÓÃ¡£
+static int deliver_signal(int sig, struct siginfo* info, struct task_struct* t)
 {
 	int retval = send_signal(sig, info, &t->pending);
 
+	// Èç¹ûsend_signal³É¹¦ÇÒ¹Û²ìµ½ÐÅºÅÒÑ±»ÖÃÎ»ÔòÍ¨Öª¸Ã½ø³ÌÓÐÐÂÐÅºÅµ½À´¡£
 	if (!retval && !sigismember(&t->blocked, sig))
 		signal_wake_up(t);
 
 	return retval;
 }
 
+
+/*
+ *@brief½«´øÓÐ¶îÍâÐÅÏ¢µÄÐÅºÅsig´«ËÍ¸øtÖ¸ÏòµÄ½ø³Ì£¬¼´Ä¿±ê½ø³Ì¡£
+ *@param sig ·¢ËÍÐÅºÅµÄ±àºÅ
+ *@param *info ÓÐÁ½ÖØÒâÒå£º£¨1£©Èç¹ûÊÇÊµÊ±ÐÅºÅÔòËüÖ¸Ïò´æ·Å¶îÍâÐÅÏ¢µÄÊý¾Ý½á¹¹
+ *             siginfo_tµÄµØÖ·£»
+ *						   £¨2£©Èç¹ûÊÇ·ÇÊµÊ±ÐÅºÅÔòËûÈ¡0»ò1£¬0±íÊ¾Õâ¸öÐÅºÅÊÇÓÉ
+ *			   ÓÃ»§Ì¬½ø³Ì·¢ËÍµÄ£¬¶ø1±íÊ¾ÊÇÓÉÄÚºË·¢ËÍµÄ¡£
+ *@param *t ÊÇÖ¸ÏòÄ¿±ê½ø³ÌµÄPCBµÄÖ¸Õë¡£
+ */
 int
-send_sig_info(int sig, struct siginfo *info, struct task_struct *t)
+send_sig_info(int sig, struct siginfo* info, struct task_struct* t)
 {
 	unsigned long flags;
 	int ret;
 
 
 #if DEBUG_SIG
-printk("SIG queue (%s:%d): %d ", t->comm, t->pid, sig);
+	printk("SIG queue (%s:%d): %d ", t->comm, t->pid, sig);
 #endif
 
+	//Ê×ÏÈ²âÊÔÐÅºÅ±àºÅsigÔÚÔ¤ÆÚµÄ·¶Î§Ö®ÄÚ£¨0<sig<64)
 	ret = -EINVAL;
-	if (sig < 0 || sig > _NSIG)
+	if (sig < 0 || sig > _NSIG)//²»ÔÚÐÅºÅ·¶Î§³ö´í
 		goto out_nolock;
 	/* The somewhat baroque permissions check... */
 	ret = -EPERM;
-	if (bad_signal(sig, info, t))
+	if (bad_signal(sig, info, t))//½øÐÐ´íÎó¼ì²é£¬ÒÔ²âÊÔÐÅºÅµÄ´«ËÍÊÇ·ñºÏ·¨¡£
 		goto out_nolock;
 
 	/* The null signal is a permissions and process existance probe.
 	   No signal is actually delivered.  Same goes for zombies. */
 	ret = 0;
-	if (!sig || !t->sig)
+	if (!sig || !t->sig)//Èç¹ûÐÅºÅÎª0»òÕßÐÅºÅÒª´«ËÍµÄÄ¿±êÊÇ½©½ø³Ì£¬¾ÍÁ¢¼´·µ»Ø¡£
 		goto out_nolock;
 
 	spin_lock_irqsave(&t->sigmask_lock, flags);
-	handle_stop_signal(sig, t);
+	handle_stop_signal(sig, t);//ÊÕµ½Ä³Ð©ÌØ¶¨µÄÐÅºÅ,²»¿ÉÆÁ±ÎÒ»Ð©ÆäËûºóÐøÐÅºÅ,Õâ¸ö¸ºÔð´¦Àí
 
 	/* Optimize away the signal, if it's a signal that can be
 	   handled immediately (ie non-blocked and untraced) and
 	   that is ignored (either explicitly or by default).  */
 
-	if (ignored_signal(sig, t))
+	if (ignored_signal(sig, t))/*¼ì²âÄ¿±ê½ø³ÌÊÇ·ñÒªºöÂÔÐÅºÅ²¢ÇÒ²»ÔÊÐí½ÓÊÜÐÅºÅ£¬
+								 Èç¹û·µ»Ø1£¬Ôò²»±Ø¶ÔÄ¿±ê½ø³ÌµÄsiginfo_t±í½øÐÐ¸üÐÂ£¬
+								 Ò²²»ÐèÒª·¢ËÍÕâ¸öÐÅºÅ¡£µ«Èç¹ûÕâ¸ö½ø³ÌÊÇ´¦ÓÚTASK_INTERRUPTIBLE×´Ì¬£¬
+								 Í¬Ê±ÓÐÆäËû·Ç×èÈûµÄ¹ÒÆðÐÅºÅ£¬ÔòÒª±»»½ÐÑ¡£Èç¹û·µ»Ø0£¬Ôò±íÊ¾Ä¿±ê½ø³Ì
+								 µÄÊý¾Ý½á¹¹ÒÑÍ¨ÖªÄ¿±ê½ø³ÌÒ»¸öÐÂµÄÐÅºÅÒÑµ½´ï¡£
+								 */
 		goto out;
 
 	/* Support queueing exactly one non-rt signal, so that we
 	   can get more detailed information about the cause of
 	   the signal. */
+	   // ÒÑÖÃÎ»µÄ·ÇÊµÊ±ÐÅºÅ½«²»»áÔì³ÉÐÞ¸Ä
 	if (sig < SIGRTMIN && sigismember(&t->pending.signal, sig))
-		goto out;
+		goto out;/*Èç¹ûÐÅºÅsigÊÇ·ÇÊµÊ±ÐÅºÅ£¬ÔÚÕâÀïµ÷ÓÃsigismember¼ì²âËüÊÇ·ñÊÇÍ¬Ò»ÊµÀý
+				   µÄµÚ¶þ¸öÐÅºÅ£¬ÈôÊÇÔò±»ºöÂÔ*/
 
 	ret = deliver_signal(sig, info, t);
 out:
 	spin_unlock_irqrestore(&t->sigmask_lock, flags);
+	//Èç¹û½ÓÊÕµÄ½ø³Ì´¦ÓÚÕâ¸ö×´Ì¬,
+	//¶øÇÒÓÐÐÅºÅÒª´¦Àí,Ôò»½ÐÑ½ø³Ì
 out_nolock:
 #if DEBUG_SIG
-printk(" %d -> %d\n", signal_pending(t), ret);
+	printk(" %d -> %d\n", signal_pending(t), ret);
 #endif
 
 	return ret;
@@ -557,24 +639,32 @@ printk(" %d -> %d\n", signal_pending(t), ret);
  * we unblock the signal and change any SIG_IGN to SIG_DFL.
  */
 
+ /*
+  *@briefÕâ¸öº¯ÊýÊÇÓÉÄÚºËÓÃÀ´·¢ËÍ²»ÄÜ±»½ø³ÌÏÔÊ¾ºöÂÔ£¬»òÕß²»ÄÜ±»Ä¿±ê½ø³Ì×èÈûµÄÐÅºÅ¡£
+  *@param ²ÎÊýÍ¬send_sig_info
+  */
 int
-force_sig_info(int sig, struct siginfo *info, struct task_struct *t)
+force_sig_info(int sig, struct siginfo* info, struct task_struct* t)
 {
 	unsigned long int flags;
 
+	//¼ì²âÄ¿±ê½ø³ÌÊÇ·ñÊÇ½©½ø³Ì£¬ÈôÊÇÔò·µ»Ø´íÎó¡£
 	spin_lock_irqsave(&t->sigmask_lock, flags);
 	if (t->sig == NULL) {
 		spin_unlock_irqrestore(&t->sigmask_lock, flags);
 		return -ESRCH;
 	}
 
-	if (t->sig->action[sig-1].sa.sa_handler == SIG_IGN)
-		t->sig->action[sig-1].sa.sa_handler = SIG_DFL;
+	/*¼ì²âÄ¿±ê½ø³ÌÊÇ·ñÒªºöÂÔÕâ¸öÐÅºÅ£¬ÈôÊÇÔòforce_sig_infoº¯Êý½«°ÑËüÉèÖÃÎªÄ¬ÈÏ²Ù×÷£¨SIG_DFL£©
+	  Êµ¼ÊÉÏÄÚºËÊ¹ÓÃ¸Ãº¯ÊýÊ±£¬¶ÔÕâ¸öÐÅºÅµÄÄ¬ÈÏ²Ù×÷ÊÇÉ±ËÀ½ø³Ì*/
+	if (t->sig->action[sig - 1].sa.sa_handler == SIG_IGN)
+		t->sig->action[sig - 1].sa.sa_handler = SIG_DFL;
+	//°ÑÐÅºÅsigµÄÆÁ±ÎÎ»¸´Î»£¬¼´½Ó´¥¶Ô´ËÐÅºÅµÄËø¶¨¡£
 	sigdelset(&t->blocked, sig);
 	recalc_sigpending(t);
 	spin_unlock_irqrestore(&t->sigmask_lock, flags);
 
-	return send_sig_info(sig, info, t);
+	return send_sig_info(sig, info, t);//ÏÖÔÚ¿ÉÒÔ°²È«µ÷ÓÃsend_sig_info£¨£©ÏòÄ¿±ê½ø³Ì·¢ËÍÐÅºÅ¡£
 }
 
 /*
@@ -582,12 +672,13 @@ force_sig_info(int sig, struct siginfo *info, struct task_struct *t)
  * control characters do (^C, ^Z etc)
  */
 
+ // ·¢ËÍÐÅºÅ¸ø½ø³Ì×éÀïµÄÈ«²¿½ø³Ì¡£
 int
-kill_pg_info(int sig, struct siginfo *info, pid_t pgrp)
+kill_pg_info(int sig, struct siginfo* info, pid_t pgrp)
 {
 	int retval = -EINVAL;
 	if (pgrp > 0) {
-		struct task_struct *p;
+		struct task_struct* p;
 
 		retval = -ESRCH;
 		read_lock(&tasklist_lock);
@@ -609,12 +700,13 @@ kill_pg_info(int sig, struct siginfo *info, pid_t pgrp)
  * the connection is lost.
  */
 
+ // ·¢ËÍÐÅºÅ¸ø»á»°µÄ³ÖÓÐÕß
 int
-kill_sl_info(int sig, struct siginfo *info, pid_t sess)
+kill_sl_info(int sig, struct siginfo* info, pid_t sess)
 {
 	int retval = -EINVAL;
 	if (sess > 0) {
-		struct task_struct *p;
+		struct task_struct* p;
 
 		retval = -ESRCH;
 		read_lock(&tasklist_lock);
@@ -630,11 +722,12 @@ kill_sl_info(int sig, struct siginfo *info, pid_t sess)
 	return retval;
 }
 
+// ·¢ËÍÐÅºÅ¸øÌØ¶¨½ø³Ì
 inline int
-kill_proc_info(int sig, struct siginfo *info, pid_t pid)
+kill_proc_info(int sig, struct siginfo* info, pid_t pid)
 {
 	int error;
-	struct task_struct *p;
+	struct task_struct* p;
 
 	read_lock(&tasklist_lock);
 	p = find_task_by_pid(pid);
@@ -653,13 +746,15 @@ kill_proc_info(int sig, struct siginfo *info, pid_t pid)
  * is probably wrong.  Should make it like BSD or SYSV.
  */
 
-static int kill_something_info(int sig, struct siginfo *info, int pid)
+ // Ïò½ø³Ì·¢ËÍÐÅºÅ¡£-1: ¹ã²¥ <0: È¡¸ººó·¢ËÍ¸øÖ¸¶¨µÄ½ø³Ì×é >0: ·¢ËÍ¸øÖ¸¶¨µÄ½ø³Ì
+static int kill_something_info(int sig, struct siginfo* info, int pid)
 {
-	if (!pid) {
+	if (!pid) {//µ±pid==0·¢ËÍ¸øµ±Ç°½ø³ÌµÄËùÓÐ½ø³Ì
 		return kill_pg_info(sig, info, current->pgrp);
-	} else if (pid == -1) {
+	}
+	else if (pid == -1) {	 //·¢ËÍµ½³ýµ±Ç°½ø³ÌÒÔÍâµÄ½ø³Ì
 		int retval = 0, count = 0;
-		struct task_struct * p;
+		struct task_struct* p;
 
 		read_lock(&tasklist_lock);
 		for_each_task(p) {
@@ -672,10 +767,12 @@ static int kill_something_info(int sig, struct siginfo *info, int pid)
 		}
 		read_unlock(&tasklist_lock);
 		return count ? retval : -ESRCH;
-	} else if (pid < 0) {
+	}
+	else if (pid < 0) {//Ð¡ÓÚÖµ,Ôò·¢ËÍ¸ø-pidµÄ½ø³Ì×é
 		return kill_pg_info(sig, info, -pid);
-	} else {
-		return kill_proc_info(sig, info, pid);
+	}
+	else {
+		return kill_proc_info(sig, info, pid);//·¢ËÍ¸ø¾ßÌåµÄ½ø³Ì
 	}
 }
 
@@ -683,14 +780,15 @@ static int kill_something_info(int sig, struct siginfo *info, int pid)
  * These are for backward compatibility with the rest of the kernel source.
  */
 
+ // Ïòºó¼æÈÝ
 int
-send_sig(int sig, struct task_struct *p, int priv)
+send_sig(int sig, struct task_struct* p, int priv)
 {
 	return send_sig_info(sig, (void*)(long)(priv != 0), p);
 }
 
 void
-force_sig(int sig, struct task_struct *p)
+force_sig(int sig, struct task_struct* p)
 {
 	force_sig_info(sig, (void*)1L, p);
 }
@@ -698,28 +796,29 @@ force_sig(int sig, struct task_struct *p)
 int
 kill_pg(pid_t pgrp, int sig, int priv)
 {
-	return kill_pg_info(sig, (void *)(long)(priv != 0), pgrp);
+	return kill_pg_info(sig, (void*)(long)(priv != 0), pgrp);
 }
 
 int
 kill_sl(pid_t sess, int sig, int priv)
 {
-	return kill_sl_info(sig, (void *)(long)(priv != 0), sess);
+	return kill_sl_info(sig, (void*)(long)(priv != 0), sess);
 }
 
 int
 kill_proc(pid_t pid, int sig, int priv)
 {
-	return kill_proc_info(sig, (void *)(long)(priv != 0), pid);
+	return kill_proc_info(sig, (void*)(long)(priv != 0), pid);
 }
 
 /*
  * Joy. Or not. Pthread wants us to wake up every thread
  * in our parent group.
  */
-static void wake_up_parent(struct task_struct *parent)
+ // »½ÐÑÖ¸¶¨µÄ¸¸½ø³Ì
+static void wake_up_parent(struct task_struct* parent)
 {
-	struct task_struct *tsk = parent;
+	struct task_struct* tsk = parent;
 
 	do {
 		wake_up_interruptible(&tsk->wait_chldexit);
@@ -730,8 +829,10 @@ static void wake_up_parent(struct task_struct *parent)
 /*
  * Let a parent know about a status change of a child.
  */
-
-void do_notify_parent(struct task_struct *tsk, int sig)
+ /* ½«×Ó½ø³ÌÍË³öÊ±µÄÐÅºÅÍ¨Öª¸¸½ø³Ì¡£
+  *tsk: Ä¿±ê×Ó½ø³Ì¡£
+  */
+void do_notify_parent(struct task_struct* tsk, int sig)
 {
 	struct siginfo info;
 	int why, status;
@@ -750,6 +851,7 @@ void do_notify_parent(struct task_struct *tsk, int sig)
 	switch (tsk->state) {
 	case TASK_STOPPED:
 		/* FIXME -- can we deduce CLD_TRAPPED or CLD_CONTINUED? */
+		// ±»¸ú×Ù£ºÏÝÈë£¬·ñÔòÍ£Ö¹
 		if (tsk->ptrace & PT_PTRACED)
 			why = CLD_TRAPPED;
 		else
@@ -757,10 +859,13 @@ void do_notify_parent(struct task_struct *tsk, int sig)
 		break;
 
 	default:
+		// ½ø³ÌÒì³£ÖÕÖ¹(µ«ÓÐcore)
 		if (tsk->exit_code & 0x80)
 			why = CLD_DUMPED;
+		// ½ø³ÌÒì³£ÖÕÖ¹(ÎÞcore)
 		else if (tsk->exit_code & 0x7f)
 			why = CLD_KILLED;
+		// ·µ»ØÂëÎª0, Õý³£ÍË³ö
 		else {
 			why = CLD_EXITED;
 			status = tsk->exit_code >> 8;
@@ -769,7 +874,7 @@ void do_notify_parent(struct task_struct *tsk, int sig)
 	}
 	info.si_code = why;
 	info.si_status = status;
-
+	// Ïò¸¸½ø³Ì·¢ËÍÐÅºÅ²¢»½ÐÑ¡£
 	send_sig_info(sig, &info, tsk->p_pptr);
 	wake_up_parent(tsk->p_pptr);
 }
@@ -782,8 +887,9 @@ void do_notify_parent(struct task_struct *tsk, int sig)
  * exit.c calls "do_notify_parent()" directly, because
  * it already has the tasklist lock.
  */
+ // Í¨Öª¸¸½ø³Ì¹ØÓÚ×Ó½ø³ÌµÄ±ä»¯µÄAPI¡£ÔÚ»ñµÃËøµÄÇé¿öÏÂÒ²¿ÉÒÔÖ±½Óµ÷ÓÃdo_notify_parent
 void
-notify_parent(struct task_struct *tsk, int sig)
+notify_parent(struct task_struct* tsk, int sig)
 {
 	read_lock(&tasklist_lock);
 	do_notify_parent(tsk, sig);
@@ -811,15 +917,19 @@ EXPORT_SYMBOL(unblock_all_signals);
 /*
  * System call entry points.
  */
+ // ÏµÍ³µ÷ÓÃµÄÈë¿Úµã
 
-/*
- * We don't need to get the kernel lock - this is all local to this
- * particular thread.. (and that's good, because this is _heavily_
- * used by various programs)
- */
-
+ /*
+  * We don't need to get the kernel lock - this is all local to this
+  * particular thread.. (and that's good, because this is _heavily_
+  * used by various programs)
+  */
+  /*
+   *Éè¶¨¶ÔÐÅºÅÆÁ±Î¼¯ÄÚµÄÐÅºÅµÄ´¦Àí·½Ê½(×èÈû»ò²»×èÈû)¡£
+   *oset: out sigset
+   */
 asmlinkage long
-sys_rt_sigprocmask(int how, sigset_t *set, sigset_t *oset, size_t sigsetsize)
+sys_rt_sigprocmask(int how, sigset_t* set, sigset_t* oset, size_t sigsetsize)
 {
 	int error = -EINVAL;
 	sigset_t old_set, new_set;
@@ -832,7 +942,8 @@ sys_rt_sigprocmask(int how, sigset_t *set, sigset_t *oset, size_t sigsetsize)
 		error = -EFAULT;
 		if (copy_from_user(&new_set, set, sizeof(*set)))
 			goto out;
-		sigdelsetmask(&new_set, sigmask(SIGKILL)|sigmask(SIGSTOP));
+		// ²»ÄÜÆÁ±ÎSIGKILLºÍSIGSTOP
+		sigdelsetmask(&new_set, sigmask(SIGKILL) | sigmask(SIGSTOP));
 
 		spin_lock_irq(&current->sigmask_lock);
 		old_set = current->blocked;
@@ -843,9 +954,11 @@ sys_rt_sigprocmask(int how, sigset_t *set, sigset_t *oset, size_t sigsetsize)
 			error = -EINVAL;
 			break;
 		case SIG_BLOCK:
+			// »ò£¬¼Ì³ÐÔ­ÓÐµÄ×èÈûÐÅºÅ
 			sigorsets(&new_set, &old_set, &new_set);
 			break;
 		case SIG_UNBLOCK:
+			// Óë·Ç£¬È¡Ïûnew_setÖÐ¶ÔÈ«²¿ÐÅºÅµÄ×èÈû
 			signandsets(&new_set, &old_set, &new_set);
 			break;
 		case SIG_SETMASK:
@@ -859,7 +972,8 @@ sys_rt_sigprocmask(int how, sigset_t *set, sigset_t *oset, size_t sigsetsize)
 			goto out;
 		if (oset)
 			goto set_old;
-	} else if (oset) {
+	}
+	else if (oset) {
 		spin_lock_irq(&current->sigmask_lock);
 		old_set = current->blocked;
 		spin_unlock_irq(&current->sigmask_lock);
@@ -874,7 +988,7 @@ out:
 	return error;
 }
 
-long do_sigpending(void *set, unsigned long sigsetsize)
+long do_sigpending(void* set, unsigned long sigsetsize)
 {
 	long error = -EINVAL;
 	sigset_t pending;
@@ -882,6 +996,7 @@ long do_sigpending(void *set, unsigned long sigsetsize)
 	if (sigsetsize > sizeof(sigset_t))
 		goto out;
 
+	// ÅÅ³ý±»×èÈûµÄÐÅºÅ
 	spin_lock_irq(&current->sigmask_lock);
 	sigandsets(&pending, &current->blocked, &current->pending.signal);
 	spin_unlock_irq(&current->sigmask_lock);
@@ -891,17 +1006,21 @@ long do_sigpending(void *set, unsigned long sigsetsize)
 		error = 0;
 out:
 	return error;
-}	
+}
 
+// ·µ»Øµ±Ç°½ø³Ì±»¹ÒÆðµÄÐÅºÅ¼¯ºÏ¡£
 asmlinkage long
-sys_rt_sigpending(sigset_t *set, size_t sigsetsize)
+sys_rt_sigpending(sigset_t* set, size_t sigsetsize)
 {
 	return do_sigpending(set, sigsetsize);
 }
 
+/* ÔÝÍ£Ïß³ÌÖ±µ½ÊÕµ½Ö¸¶¨µÄÐÅºÅ(Ö®Ò»)¡£Èç¹ûÒÑ¾­´æÔÚ±»¹ÒÆðµÄÖ¸¶¨ÐÅºÅÔòÁ¢¼´·µ»Ø
+ * uts: ³¬Ê±Ê±¼ä
+ */
 asmlinkage long
-sys_rt_sigtimedwait(const sigset_t *uthese, siginfo_t *uinfo,
-		    const struct timespec *uts, size_t sigsetsize)
+sys_rt_sigtimedwait(const sigset_t* uthese, siginfo_t* uinfo,
+	const struct timespec* uts, size_t sigsetsize)
 {
 	int ret, sig;
 	sigset_t these;
@@ -915,19 +1034,19 @@ sys_rt_sigtimedwait(const sigset_t *uthese, siginfo_t *uinfo,
 
 	if (copy_from_user(&these, uthese, sizeof(these)))
 		return -EFAULT;
-		
+
 	/*
 	 * Invert the set of allowed signals to get those we
 	 * want to block.
 	 */
-	sigdelsetmask(&these, sigmask(SIGKILL)|sigmask(SIGSTOP));
+	sigdelsetmask(&these, sigmask(SIGKILL) | sigmask(SIGSTOP));
 	signotset(&these);
 
 	if (uts) {
 		if (copy_from_user(&ts, uts, sizeof(ts)))
 			return -EFAULT;
 		if (ts.tv_nsec >= 1000000000L || ts.tv_nsec < 0
-		    || ts.tv_sec < 0)
+			|| ts.tv_sec < 0)
 			return -EINVAL;
 	}
 
@@ -937,7 +1056,7 @@ sys_rt_sigtimedwait(const sigset_t *uthese, siginfo_t *uinfo,
 		timeout = MAX_SCHEDULE_TIMEOUT;
 		if (uts)
 			timeout = (timespec_to_jiffies(&ts)
-				   + (ts.tv_sec || ts.tv_nsec));
+				+ (ts.tv_sec || ts.tv_nsec));
 
 		if (timeout) {
 			/* None ready -- temporarily unblock those we're
@@ -965,7 +1084,8 @@ sys_rt_sigtimedwait(const sigset_t *uthese, siginfo_t *uinfo,
 			if (copy_siginfo_to_user(uinfo, &info))
 				ret = -EFAULT;
 		}
-	} else {
+	}
+	else {
 		ret = -EAGAIN;
 		if (timeout)
 			ret = -EINTR;
@@ -974,22 +1094,25 @@ sys_rt_sigtimedwait(const sigset_t *uthese, siginfo_t *uinfo,
 	return ret;
 }
 
+// ÏµÍ³µ÷ÓÃ: kill
 asmlinkage long
 sys_kill(int pid, int sig)
 {
-	struct siginfo info;
+	struct siginfo info;    //ÊÕ¼¯Ïà¹ØÐÅÏ¢
 
-	info.si_signo = sig;
+	info.si_signo = sig;//ÐÅºÅÀàÐÍ
 	info.si_errno = 0;
-	info.si_code = SI_USER;
-	info.si_pid = current->pid;
-	info.si_uid = current->uid;
+	info.si_code = SI_USER;//ÓÃ»§ÐÅºÅ
+	info.si_pid = current->pid;//½ø³ÌºÅ
+	info.si_uid = current->uid;//uid
 
 	return kill_something_info(sig, &info, pid);
 }
 
+
+// µ×²ã½Ó¿Ú£¬ÓÃÀ´·¢ËÍÐÅºÅµÄ¶îÍâÐÅÏ¢¡£²»ÊÇÎªÁËÓ¦ÓÃ³ÌÐòµÄÖ±½ÓÊ¹ÓÃ¡£
 asmlinkage long
-sys_rt_sigqueueinfo(int pid, int sig, siginfo_t *uinfo)
+sys_rt_sigqueueinfo(int pid, int sig, siginfo_t* uinfo)
 {
 	siginfo_t info;
 
@@ -1007,23 +1130,23 @@ sys_rt_sigqueueinfo(int pid, int sig, siginfo_t *uinfo)
 }
 
 int
-do_sigaction(int sig, const struct k_sigaction *act, struct k_sigaction *oact)
+do_sigaction(int sig, const struct k_sigaction* act, struct k_sigaction* oact)
 {
-	struct k_sigaction *k;
+	struct k_sigaction* k;
 
 	if (sig < 1 || sig > _NSIG ||
-	    (act && (sig == SIGKILL || sig == SIGSTOP)))
+		(act && (sig == SIGKILL || sig == SIGSTOP)))//²»ÔÊÐí¶Ô´ËÐÅºÅ°²×°ÐÅºÅ´¦Àíº¯Êý
 		return -EINVAL;
 
-	k = &current->sig->action[sig-1];
+	k = &current->sig->action[sig - 1];//»ñÈ¡¸ÃÐÅºÅµÄ¾ÉÐÅºÅ´¦Àíº¯Êý
 
 	spin_lock(&current->sig->siglock);
 
 	if (oact)
-		*oact = *k;
+		*oact = *k;//»ñÈ¡ÀÏµÄÐÅºÅ¾ßÌå²Ù×÷
 
 	if (act) {
-		*k = *act;
+		*k = *act;//»ñÈ¡ÐÂµÄÐÅºÅ´¦Àí²Ù×÷,½«×èÈûÎ»sigkill¸úsigstopÉ¾³ý(²»ÔÊÐíÆÁ±Î)
 		sigdelsetmask(&k->sa.sa_mask, sigmask(SIGKILL) | sigmask(SIGSTOP));
 
 		/*
@@ -1044,12 +1167,13 @@ do_sigaction(int sig, const struct k_sigaction *act, struct k_sigaction *oact)
 		 */
 
 		if (k->sa.sa_handler == SIG_IGN
-		    || (k->sa.sa_handler == SIG_DFL
-			&& (sig == SIGCONT ||
-			    sig == SIGCHLD ||
-			    sig == SIGWINCH))) {
+			|| (k->sa.sa_handler == SIG_DFL
+				&& (sig == SIGCONT ||
+					sig == SIGCHLD ||
+					sig == SIGWINCH))) {
 			spin_lock_irq(&current->sigmask_lock);
-			if (rm_sig_from_queue(sig, current))
+			if (rm_sig_from_queue(sig, current))//Èç¹ûÉèÖÃµÄ´¦ÀíÄ£Ê½ÊÇsig_ign»òÕßsig_del
+			//¶øÉæ¼°µÄÐÅºÅÊÇÉÏÃæ3¸ö,ÄÇ¾ÍÖ±½Ó¶ªÆúÒÑµ½´ïÐÅºÅ
 				recalc_sigpending(current);
 			spin_unlock_irq(&current->sigmask_lock);
 		}
@@ -1059,32 +1183,32 @@ do_sigaction(int sig, const struct k_sigaction *act, struct k_sigaction *oact)
 	return 0;
 }
 
-int 
-do_sigaltstack (const stack_t *uss, stack_t *uoss, unsigned long sp)
+int
+do_sigaltstack(const stack_t* uss, stack_t* uoss, unsigned long sp)
 {
 	stack_t oss;
 	int error;
 
 	if (uoss) {
-		oss.ss_sp = (void *) current->sas_ss_sp;
+		oss.ss_sp = (void*)current->sas_ss_sp;
 		oss.ss_size = current->sas_ss_size;
 		oss.ss_flags = sas_ss_flags(sp);
 	}
 
 	if (uss) {
-		void *ss_sp;
+		void* ss_sp;
 		size_t ss_size;
 		int ss_flags;
 
 		error = -EFAULT;
 		if (verify_area(VERIFY_READ, uss, sizeof(*uss))
-		    || __get_user(ss_sp, &uss->ss_sp)
-		    || __get_user(ss_flags, &uss->ss_flags)
-		    || __get_user(ss_size, &uss->ss_size))
+			|| __get_user(ss_sp, &uss->ss_sp)
+			|| __get_user(ss_flags, &uss->ss_flags)
+			|| __get_user(ss_size, &uss->ss_size))
 			goto out;
 
 		error = -EPERM;
-		if (on_sig_stack (sp))
+		if (on_sig_stack(sp))
 			goto out;
 
 		error = -EINVAL;
@@ -1102,13 +1226,14 @@ do_sigaltstack (const stack_t *uss, stack_t *uoss, unsigned long sp)
 		if (ss_flags == SS_DISABLE) {
 			ss_size = 0;
 			ss_sp = NULL;
-		} else {
+		}
+		else {
 			error = -ENOMEM;
 			if (ss_size < MINSIGSTKSZ)
 				goto out;
 		}
 
-		current->sas_ss_sp = (unsigned long) ss_sp;
+		current->sas_ss_sp = (unsigned long)ss_sp;
 		current->sas_ss_size = ss_size;
 	}
 
@@ -1124,7 +1249,7 @@ out:
 }
 
 asmlinkage long
-sys_sigpending(old_sigset_t *set)
+sys_sigpending(old_sigset_t* set)
 {
 	return do_sigpending(set, sizeof(*set));
 }
@@ -1133,7 +1258,7 @@ sys_sigpending(old_sigset_t *set)
 /* Alpha has its own versions with special arguments.  */
 
 asmlinkage long
-sys_sigprocmask(int how, old_sigset_t *set, old_sigset_t *oset)
+sys_sigprocmask(int how, old_sigset_t* set, old_sigset_t* oset)
 {
 	int error;
 	old_sigset_t old_set, new_set;
@@ -1142,7 +1267,7 @@ sys_sigprocmask(int how, old_sigset_t *set, old_sigset_t *oset)
 		error = -EFAULT;
 		if (copy_from_user(&new_set, set, sizeof(*set)))
 			goto out;
-		new_set &= ~(sigmask(SIGKILL)|sigmask(SIGSTOP));
+		new_set &= ~(sigmask(SIGKILL) | sigmask(SIGSTOP));
 
 		spin_lock_irq(&current->sigmask_lock);
 		old_set = current->blocked.sig[0];
@@ -1169,7 +1294,8 @@ sys_sigprocmask(int how, old_sigset_t *set, old_sigset_t *oset)
 			goto out;
 		if (oset)
 			goto set_old;
-	} else if (oset) {
+	}
+	else if (oset) {
 		old_set = current->blocked.sig[0];
 	set_old:
 		error = -EFAULT;
@@ -1181,10 +1307,12 @@ out:
 	return error;
 }
 
+
+// Ö¸¶¨Ä³ÐÅºÅµÄ´¦Àí·½Ê½¡£
 #ifndef __sparc__
 asmlinkage long
-sys_rt_sigaction(int sig, const struct sigaction *act, struct sigaction *oact,
-		 size_t sigsetsize)
+sys_rt_sigaction(int sig, const struct sigaction* act, struct sigaction* oact,
+	size_t sigsetsize)
 {
 	struct k_sigaction new_sa, old_sa;
 	int ret = -EINVAL;
@@ -1210,6 +1338,8 @@ out:
 #endif /* __sparc__ */
 #endif
 
+
+// Ïòºó¼æÈÝ¡£
 #if !defined(__alpha__) && !defined(__ia64__)
 /*
  * For backwards compatibility.  Functionality superseded by sigprocmask.
@@ -1229,8 +1359,8 @@ sys_ssetmask(int newmask)
 	spin_lock_irq(&current->sigmask_lock);
 	old = current->blocked.sig[0];
 
-	siginitset(&current->blocked, newmask & ~(sigmask(SIGKILL)|
-						  sigmask(SIGSTOP)));
+	siginitset(&current->blocked, newmask & ~(sigmask(SIGKILL) |
+		sigmask(SIGSTOP)));
 	recalc_sigpending(current);
 	spin_unlock_irq(&current->sigmask_lock);
 
@@ -1238,6 +1368,7 @@ sys_ssetmask(int newmask)
 }
 #endif /* !defined(__alpha__) */
 
+// Ïòºó¼æÈÝ¡£
 #if !defined(__alpha__) && !defined(__ia64__) && !defined(__mips__)
 /*
  * For backwards compatibility.  Functionality superseded by sigaction.
