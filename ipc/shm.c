@@ -32,15 +32,15 @@
 struct shmid_kernel
 {
 	struct kern_ipc_perm	shm_perm;		/* IPC许可权限 */
-	struct file* shm_file;		/* 共享内存文件 */
+	struct file*			shm_file;		/* 共享内存文件 */
 	int						id;				/* 共享内存ID */
 	unsigned long			shm_nattch;		/* 挂接到本段共享内存的进程数 */
-	unsigned long			shm_segsz;		/* 段大小 */
+	unsigned long			shm_segsz;		/* 内存段大小 */
 	time_t					shm_atim;		/* 最后挂接时间 */
 	time_t					shm_dtim;		/* 最后解除挂接时间 */
 	time_t					shm_ctim;		/* 最后变化时间 */
 	pid_t					shm_cprid		/* 创建进程的PID */
-		pid_t					shm_lprid;		/* 最后使用进程的PID */
+	pid_t					shm_lprid;		/* 最后使用进程的PID */
 };
 
 #define shm_flags	shm_perm.mode
@@ -117,7 +117,7 @@ static inline int shm_addid(struct shmid_kernel* shp)
 
 
 /**
- * @brief 为共享内存挂接进程
+ * @brief 挂接进程后，为共享内存添加该进程信息
  * @param 共享内存
  */
 static inline void shm_inc(int id) {
@@ -197,9 +197,10 @@ static void shm_close(struct vm_area_struct* shmd)
 
 /**
  * @brief mmap函数
- * 将一个文件或者其它对象映射到进程的地址空间，实现文件磁盘地址和进程虚拟地址空间中一段虚拟地址的一一对映关系。
+ * 将一个文件映射到进程的地址空间，实现文件磁盘地址和进程虚拟地址空间中一段虚拟地址的一一对映关系。
  * 实现这样的映射关系后，进程就可以采用指针的方式读写操作这一段内存，
- * 而系统会自动回写脏页面到对应的文件磁盘上，即完成了对文件的操作而不必再调用read,write等系统调用函数。相反，内核空间对这段区域的修改也直接反映用户空间，从而可以实现不同进程间的文件共享。
+ * 而系统会自动回写脏页面到对应的文件磁盘上，即完成了对文件的操作而不必再调用read,write等系统调用函数。
+ * 相反，内核空间对这段区域的修改也直接反映用户空间，从而可以实现不同进程间的文件共享。
  * @param file 文件
  * @param vma 虚拟内存空间地址
  * 
@@ -228,6 +229,8 @@ static struct vm_operations_struct shm_vm_ops = {
  * @param key
  * @param shmflg
  * @param size
+ * 
+ * @return 成功返回共享内存ID
  */
 static int newseg(key_t key, int shmflg, size_t size)
 {
@@ -283,6 +286,12 @@ no_file:
 	return error;
 }
 
+/**
+ * @brief 获取共享内存
+ * @param key ID
+ * @param size 大小
+ * @param shmflg 操作符
+ */
 asmlinkage long sys_shmget(key_t key, size_t size, int shmflg)
 {
 	struct shmid_kernel* shp;
@@ -690,11 +699,12 @@ out_unlock:
  * Fix shmaddr, allocate descriptor, map shm, add attach descriptor to lists.
  */
 /**
- * @brief 挂接操作 - 创建共享内存段之后，将进程连接到它的地址空间；
+ * @brief 内存映射 - 将共享内存映射到进程空间；
  * @coder 修复共享内存地址，分配描述符，映射共享内存，将附加描述符添加到列表。
- * @param shm_id 共享内存标识符。
- * @param shm_addr 指定共享内存连接到当前进程中的地址位置，通常为空，表示让系统来选择共享内存的地址。
- * @param shm_flg 标志位，如果值为SHM_RDONLY，则进程以只读的方式访问共享内存，否则以读写方式访问共享内存。
+ * @param shmid 共享内存标识符。
+ * @param shmaddr 指定共享内存连接到当前进程中的地址位置，通常为空，表示让系统来选择共享内存的地址。
+ * @param shmflg 标志位，如果值为SHM_RDONLY，则进程以只读的方式访问共享内存，否则以读写方式访问共享内存。
+ * @param raddr
  * 
  * @return 
  *			若成功，则返回共享存储段地址
@@ -815,6 +825,7 @@ invalid:
  */
 asmlinkage long sys_shmdt(char* shmaddr)
 {
+	// vma虚拟内存空间
 	struct mm_struct* mm = current->mm;
 	struct vm_area_struct* shmd, * shmdnext;
 

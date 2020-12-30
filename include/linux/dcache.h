@@ -1,4 +1,4 @@
-#ifndef __LINUX_DCACHE_H
+﻿#ifndef __LINUX_DCACHE_H
 #define __LINUX_DCACHE_H
 
 //#ifdef __KERNEL__
@@ -63,25 +63,34 @@ static __inline__ unsigned int full_name_hash(const unsigned char * name, unsign
 
 #define DNAME_INLINE_LEN 16
 
-/* ����ļ�����Ŀ¼������,��Ŀ¼ */
-struct dentry {	
-	atomic_t d_count;
-	unsigned int d_flags;
-	struct inode* d_inode;						/* ���ļ��������������ڵ�Where the name belongs to - NULL is negative */
-	struct dentry* d_parent;					/* ��Ŀ¼ָ��parent directory */
-	struct list_head d_hash;					/* lookup hash list */
-	struct list_head d_lru;						/* d_count = 0 LRU list */
-	struct list_head d_child;					/* child of parent list */
-	struct list_head d_subdirs;					/* our children */
-	struct list_head d_alias;					/* inode alias list */
+/* 多个文件或者目录的链接,及目录 */
+struct dentry {
+	atomic_t d_count;//目录项对象使用计数器
+	unsigned int d_flags; 目录项标志
+		struct inode* d_inode; /* 与文件名关联的索引节点Where the name belongs to - NULL is negative */
+	struct dentry* d_parent; /* 父目录指针parent directory */
+	struct list_head d_hash; /* 散列表表项的指针lookup hash list */
+	struct list_head d_lru;  /* 未使用链表的指针d_count = 0 LRU list */
+	struct list_head d_child; /* 父目录中目录项对象的链表的指针child of parent list */
+	struct list_head d_subdirs; /* 子目录目录项对象的链表our children */
+	struct list_head d_alias; /* 相关索引节点（别名）的链表inode alias list */
 	int d_mounted;
-	struct qstr d_name;							/* �ļ��� */
-	unsigned long d_time;						/* used by d_revalidate */
+	struct qstr d_name;       /*文件名*/
+	unsigned long d_time;  /* used by d_revalidate */
 	struct dentry_operations* d_op;
-	struct super_block* d_sb;					/* The root of the dentry tree */
+	struct super_block* d_sb; /*文件的超级块对象 The root of the dentry tree */
 	unsigned long d_vfs_flags;
-	void* d_fsdata;								/* fs-specific data */
-	unsigned char d_iname[DNAME_INLINE_LEN];	/* small names */
+	void* d_fsdata;  /* fs-specific data */
+	unsigned char d_iname[DNAME_INLINE_LEN]; /* small names */
+};
+
+struct dentry_operations {
+	int (*d_revalidate)(struct dentry*, int); /*使一个dentry重新生效*/
+	int (*d_hash) (struct dentry*, struct qstr*); /*向哈希表中加入一个dentry*/
+	int (*d_compare) (struct dentry*, struct qstr*, struct qstr*);
+	int (*d_delete)(struct dentry*);
+	void (*d_release)(struct dentry*); /*用于一个dentry释放它的inode*/
+	void (*d_iput)(struct dentry*, struct inode*);/*用于一个dentry释放它的inode*/
 };
 
 /* the dentry parameter passed to d_hash and d_compare is the parent

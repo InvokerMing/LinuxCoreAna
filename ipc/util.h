@@ -14,19 +14,19 @@ void shm_init (void);
 
 // ipcID数组
 struct ipc_ids {
-	int size; // 大小
-	int in_use; // 说明已分配的资源个数
-	int max_id; // 在使用的最大的位置索引
-	unsigned short seq; // 下一个分配的位置序列号
-	unsigned short seq_max; // 最大位置使用序列
-	struct semaphore sem; // 保护 ipc_ids的信号量
-	spinlock_t ary;
-	struct ipc_id* entries;
+	int size;				// 大小
+	int in_use;				// 说明已分配的资源个数
+	int max_id;				// 索引 – 当前使用最高位置
+	unsigned short seq;		// 下一个分配的位置序列号
+	unsigned short seq_max; // 索引- 使用序列最高位置
+	struct semaphore sem;	// 保护 ipc_ids的信号量
+	spinlock_t ary;			// 锁
+	struct ipc_id* entries; // 实体集
 };
 
 /* IPC管理，存放所有同种IPC方式总结构体 */
 struct ipc_id {
-	struct kern_ipc_perm* p;
+	struct kern_ipc_perm* p; // 实体数据
 };
 
 

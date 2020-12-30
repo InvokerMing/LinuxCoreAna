@@ -40,7 +40,7 @@ struct semid_ds {
 
 /* semop system calls takes an array of these. */
 /**
- * @brief 结构体 - semop系统调用结构体数组?
+ * @brief 结构体 - semop系统调用结构体数组
  */
 struct sembuf {
 	unsigned short  sem_num;	/* 数组中信号量索引 */
@@ -118,7 +118,7 @@ struct sem_array {
  */
 struct sem_queue {
 	struct sem_queue*	next;	 /* 下一个信号量队列 */
-	struct sem_queue**  prev;	 /* 上一个信号量队列, *(q->prev) == q */
+	struct sem_queue**  prev;	 /* 上一个信号量队列, *(q->prev) = q */
 	struct task_struct*	sleeper; /* 当前进程 */
 	struct sem_undo* 	undo;	 /* 撤销请求 */
 	int    				pid;	 /* 请求进程PID */
@@ -127,7 +127,7 @@ struct sem_queue {
 	int					id;		 /* 内部信号量ID */
 	struct sembuf* 		sops;	 /* 待处理操作数组 */
 	int					nsops;	 /* 总操作数量 */
-	int					alter;	 /* operation will alter semaphore */
+	int					alter;	 /* 操作会改变信号量 */
 };
 
 /**

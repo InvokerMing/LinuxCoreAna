@@ -1,4 +1,4 @@
-#ifndef _LINUX_FS_H
+﻿#ifndef _LINUX_FS_H
 #define _LINUX_FS_H
 
 /*
@@ -426,7 +426,7 @@ struct block_device {
 	struct list_head	bd_inodes;
 };
 
-/* �����ܵ������е���ͨ�У�����һ����ʱ�ļ� */
+/* 匿名管道，进行单向通行，创建一个临时文件 */
 struct inode {
 	struct list_head i_hash;
 	struct list_head i_list;
@@ -435,27 +435,30 @@ struct inode {
 	struct list_head i_dirty_buffers;
 	struct list_head i_dirty_data_buffers;
 
-	unsigned long  i_ino;
-	atomic_t  i_count;
-	kdev_t   i_dev;
-	umode_t   i_mode;
-	nlink_t   i_nlink;
-	uid_t   i_uid;
-	gid_t   i_gid;
-	kdev_t   i_rdev;
-	loff_t   i_size;
-	time_t   i_atime;
-	time_t   i_mtime;
-	time_t   i_ctime;
+	unsigned long  i_ino;/*每一个inode都有一个序号，经由super block结构和
+			其序号，我们可以很轻易的找到这个inode。*/
+	atomic_t  i_count;/*在Kernel里，很多的结构都会记录其reference count，
+		  以确保如果某个结构正在使用，它不会被不小心释放掉，
+		  i_count就是其reference count。*/
+	kdev_t   i_dev;/* inode所在的device代码 */
+	umode_t   i_mode; /* inode的权限 */
+	nlink_t   i_nlink;/* hard link的个数 */
+	uid_t   i_uid;/* inode拥有者的id */
+	gid_t   i_gid; /* inode所属的群组id */
+	kdev_t   i_rdev;/* 如果inode代表的是device的话，那此字段将记录device的代码 */
+	loff_t   i_size; /* inode所代表的档案大小 */
+	time_t   i_atime;/* inode最近一次的存取时间 */
+	time_t   i_mtime;/* inode最近一次的修改时间 */
+	time_t   i_ctime;/* inode的产生时间 */
 	unsigned int  i_blkbits;
-	unsigned long  i_blksize;
-	unsigned long  i_blocks;
+	unsigned long  i_blksize;/* inode在做IO时的区块大小 */
+	unsigned long  i_blocks;/* inode所使用的block数，一个block为512 byte*/
 	unsigned long  i_version;
 	struct semaphore i_sem;
 	struct semaphore i_zombie;
 	struct inode_operations* i_op;
-	struct file_operations* i_fop; /* �ļ����������� former ->i_op->default_file_ops */
-	struct super_block* i_sb;
+	struct file_operations* i_fop; /* 文件操作函数集 former ->i_op->default_file_ops */
+	struct super_block* i_sb;/* inode所属档案系统的super block */
 	wait_queue_head_t i_wait;
 	struct file_lock* i_flock;
 	struct address_space* i_mapping;
@@ -463,7 +466,7 @@ struct inode {
 	struct dquot* i_dquot[MAXQUOTAS];
 	/* These three should probably be a union */
 	struct list_head i_devices;
-	struct pipe_inode_info* i_pipe;  /*�ܵ��ļ�ָ������ͨ�ļ������ָ���ֵΪNULL�����ڹܵ��ļ������ָ����ֻ��һ�������ܵ��ڵ���Ϣ�ṹ��pipe_inode_info���Ա�������һ���ܵ��ļ�*/
+	struct pipe_inode_info* i_pipe;  /*管道文件指针在普通文件中这个指针的值为NULL，而在管道文件中这个指针则只想一个叫做管道节点信息结构的pipe_inode_info，以表明这是一个管道文件*/
 	struct block_device* i_bdev;
 	struct char_device* i_cdev;
 
@@ -517,17 +520,17 @@ struct fown_struct {
 	int signum;		/* posix.1b rt signal to be delivered on IO */
 };
 
-/* file�ṹ����Ҫ�������ļ�λ�ã����⣬����ָ����ļ������ڵ��ָ��Ҳ�������С�file�ṹ�γ�һ��˫��������֤�ӽ��̺͸����̹����ļ� */
+/* file结构中主要保存了文件位置，此外，还把指向该文件索引节点的指针也放在其中。file结构形成一个双链表，保证子进程和父进程共享文件 */
 struct file {
-	struct list_head f_list; /*���д򿪵��ļ��γ�һ������*/
-	struct dentry* f_dentry; /*ָ�����Ŀ¼���ָ��*/
+	struct list_head f_list; /*所有打开的文件形成一个链表*/
+	struct dentry* f_dentry; /*指向相关目录项的指针*/
 	struct vfsmount* f_vfsmnt;
-	struct file_operations* f_op; /*ָ���ļ���������ָ��*/
-	atomic_t  f_count; /*ʹ�øýṹ�Ľ�����*/
-	unsigned int   f_flags; /*���ļ�ʱ��ָ���ı�־*/
-	mode_t   f_mode;/*�ļ��Ĵ�ģʽ*/
-	loff_t   f_pos; /*�ļ��ĵ�ǰλ��*/
-	unsigned long   f_reada, f_ramax, f_raend, f_ralen, f_rawin;/*Ԥ����־��ҪԤ�������ҳ�������ϴ�Ԥ������ļ�ָ�롢Ԥ�����ֽ����Լ�Ԥ����ҳ����*/
+	struct file_operations* f_op; /*指向文件操作表的指针*/
+	atomic_t  f_count; /*使用该结构的进程数*/
+	unsigned int   f_flags; /*打开文件时所指定的标志*/
+	mode_t   f_mode;/*文件的打开模式*/
+	loff_t   f_pos; /*文件的当前位置*/
+	unsigned long   f_reada, f_ramax, f_raend, f_ralen, f_rawin;/*预读标志、要预读的最多页面数、上次预读后的文件指针、预读的字节数以及预读的页面数*/
 	struct fown_struct f_owner;
 	unsigned int  f_uid, f_gid;
 	int   f_error;
@@ -699,27 +702,27 @@ extern spinlock_t sb_lock;
 
 #define sb_entry(list)	list_entry((list), struct super_block, s_list)
 #define S_BIAS (1<<30)
-/* �ļ�ϵͳ���ƿ� */
+/* 文件系统控制块 */
 struct super_block {
-	struct list_head s_list;  /*˫��ѭ�������������е�super_block�������� Keep this first */
+	struct list_head s_list;  /*双向循环链表，把所有的super_block连接起来 Keep this first */
 	kdev_t   s_dev;
 	unsigned long  s_blocksize;
 	unsigned char  s_blocksize_bits;
 	unsigned char  s_dirt;
 	unsigned long long s_maxbytes; /* Max file size */
 	struct file_system_type* s_type;
-	struct super_operations* s_op; /*super_block�Ĳ����������ϡ�*/
-	struct dquot_operations* dq_op; /*�ļ�ϵͳ����������������*/
+	struct super_operations* s_op; /*super_block的操作函数集合。*/
+	struct dquot_operations* dq_op; /*文件系统的配额操作函数集合*/
 	unsigned long  s_flags;
 	unsigned long  s_magic;
-	struct dentry* s_root; /*ָ���Ŀ¼��dentry�ṹ��*/
+	struct dentry* s_root; /*指向根目录的dentry结构体*/
 	struct rw_semaphore s_umount;
 	struct semaphore s_lock;
 	int   s_count;
 	atomic_t  s_active;
 
 	struct list_head s_dirty; /* dirty inodes */
-	struct list_head s_locked_inodes;/* ���е�����ļ�ϵͳ��inode�ṹ��inodes being synced */
+	struct list_head s_locked_inodes;/* 所有的这个文件系统的inode结构体inodes being synced */
 	struct list_head s_files;
 
 	struct block_device* s_bdev;
@@ -772,25 +775,25 @@ struct block_device_operations {
  * read, write, poll, fsync, readv, writev can be called
  *   without the big kernel lock held in all filesystems.
  */
- /* �����豸�ļ���������read/write���� */
+ /* 控制设备文件进行诸如read/write操作 */
 struct file_operations {
-	struct module* owner;
-	loff_t(*llseek) (struct file*, loff_t, int);					/* �����ı��ļ��еĵ�ǰ�� / дλ��, ������λ����Ϊ(����)����ֵ */
-	ssize_t(*read) (struct file*, char*, size_t, loff_t*);			/* ���豸�л�ȡ���� */
-	ssize_t(*write) (struct file*, const char*, size_t, loff_t*);	/* �������ݸ��豸 */
-	int (*readdir) (struct file*, void*, filldir_t);
-	unsigned int (*poll) (struct file*, struct poll_table_struct*);
-	int (*ioctl) (struct inode*, struct file*, unsigned int, unsigned long);
-	int (*mmap) (struct file*, struct vm_area_struct*);
-	int (*open) (struct inode*, struct file*);
-	int (*flush) (struct file*);
-	int (*release) (struct inode*, struct file*);
-	int (*fsync) (struct file*, struct dentry*, int datasync);
-	int (*fasync) (int, struct file*, int);
-	int (*lock) (struct file*, int, struct file_lock*);
-	ssize_t(*readv) (struct file*, const struct iovec*, unsigned long, loff_t*);
-	ssize_t(*writev) (struct file*, const struct iovec*, unsigned long, loff_t*);
-	ssize_t(*sendpage) (struct file*, struct page*, int, size_t, loff_t*, int);
+	struct module* owner;//一个指向拥有这个结构的模块的指针. 这个成员用来在它的操作还在被使用时阻止模块被卸载
+	loff_t(*llseek) (struct file*, loff_t, int); /*用作改变文件中的当前读 / 写位置, 并且新位置作为(正的)返回值.*/
+	ssize_t(*read) (struct file*, char*, size_t, loff_t*);/*从设备中获取数据*/
+	ssize_t(*write) (struct file*, const char*, size_t, loff_t*);/*发送数据给设备*/
+	int (*readdir) (struct file*, void*, filldir_t);//它用来读取目录, 并且仅对文件系统有用.
+	unsigned int (*poll) (struct file*, struct poll_table_struct*);//poll 方法是 3 个系统调用的后端: poll, epoll, 和 select, 都用作查询对一个或多个文件描述符的读或写是否会阻塞
+	int (*ioctl) (struct inode*, struct file*, unsigned int, unsigned long);//系统调用提供了发出设备特定命令的方法
+	int (*mmap) (struct file*, struct vm_area_struct*);//请求将设备内存映射到进程的地址空间
+	int (*open) (struct inode*, struct file*);//打开
+	int (*flush) (struct file*);//进程关闭它的设备文件描述符的拷贝时调用
+	int (*release) (struct inode*, struct file*);//件结构被释放
+	int (*fsync) (struct file*, struct dentry*, int datasync);//刷新任何挂着的数据.
+	int (*fasync) (int, struct file*, int);//用来通知设备它的 FASYNC 标志的改变
+	int (*lock) (struct file*, int, struct file_lock*);//实现文件加锁
+	ssize_t(*readv) (struct file*, const struct iovec*, unsigned long, loff_t*);//发散/汇聚读
+	ssize_t(*writev) (struct file*, const struct iovec*, unsigned long, loff_t*);//发散/汇聚写
+	ssize_t(*sendpage) (struct file*, struct page*, int, size_t, loff_t*, int);//系统调用的读, 使用最少的拷贝从一个文件描述符搬移数据到另一个.
 	unsigned long (*get_unmapped_area)(struct file*, unsigned long, unsigned long, unsigned long, unsigned long);
 };
 struct inode_operations {

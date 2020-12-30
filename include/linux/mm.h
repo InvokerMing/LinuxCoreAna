@@ -1,4 +1,4 @@
-#ifndef _LINUX_MM_H
+﻿#ifndef _LINUX_MM_H
 #define _LINUX_MM_H
 
 #include <linux/sched.h>
@@ -34,43 +34,29 @@ extern struct list_head inactive_list;
  * mmap() functions).
  */
 
-/*
- * This struct defines a memory VMM memory area. There is one of these
- * per VM-area/task.  A VM area is any part of the process virtual memory
- * space that has a special rule for the page-fault handlers (ie a shared
- * library, the executable area etc).
+/**
+ * @ brief 结构体 - 进程地址空间或进程线性区
+ * 它是一段连续的、具有相同访问属性的虚拟内存空间，大小为物理内存页面的整数倍。
  */
 struct vm_area_struct {
-	struct mm_struct * vm_mm;	/* The address space we belong to. */
-	unsigned long vm_start;		/* Our start address within vm_mm. */
-	unsigned long vm_end;		/* The first byte after our end address
-					   within vm_mm. */
-
-	/* linked list of VM areas per task, sorted by address */
-	struct vm_area_struct *vm_next;
-
-	pgprot_t vm_page_prot;		/* Access permissions of this VMA. */
-	unsigned long vm_flags;		/* Flags, listed below. */
-
-	rb_node_t vm_rb;
-
-	/*
-	 * For areas with an address space and backing store,
-	 * one of the address_space->i_mmap{,shared} lists,
-	 * for shm areas, the list of attaches, otherwise unused.
-	 */
+	struct mm_struct * vm_mm;	/* 指向所属进程mm_struct结构 */
+	unsigned long vm_start;		/* 虚拟内存空间的首地址 */
+	unsigned long vm_end;		/* 虚拟内存空间的尾地址 */
+	struct vm_area_struct *vm_next;	/* 下一个成员 */
+	pgprot_t vm_page_prot;		/* VMA访问权限 */
+	unsigned long vm_flags;		/* 操作符（标志位） */
+	rb_node_t vm_rb;			/* 红黑树，用于本结构数据较多时的搜索 */
+	/* 对于具有地址空间和后备存储的区域，链接到address_space->i_mmap间隔树 */
 	struct vm_area_struct *vm_next_share;
 	struct vm_area_struct **vm_pprev_share;
+	struct vm_operations_struct * vm_ops;	/* VMA操作函数集 */
 
-	/* Function pointers to deal with this struct. */
-	struct vm_operations_struct * vm_ops;
 
 	/* Information about our backing store: */
-	unsigned long vm_pgoff;		/* Offset (within vm_file) in PAGE_SIZE
-					   units, *not* PAGE_CACHE_SIZE */
-	struct file * vm_file;		/* File we map to (can be NULL). */
-	unsigned long vm_raend;		/* XXX: put full readahead info here. */
-	void * vm_private_data;		/* was vm_pte (shared mem) */
+	unsigned long vm_pgoff;		/* 指定文件映射的偏移量，单位是页面 */
+	struct file * vm_file;		/* 被映射的文件 */
+	unsigned long vm_raend;		/* 完整的预读信息 */
+	void * vm_private_data;		/* 是vm_pte (共享内存) */
 };
 
 /*

@@ -53,7 +53,7 @@ struct msg_sender {
 };
 
 /**
- * @brief 结构体 - 用于连接消息的下一条消息的单向链表
+ * @brief 结构体 - 消息一般页
  */
 struct msg_msgseg {
 	struct msg_msgseg* next;
@@ -64,7 +64,7 @@ struct msg_msgseg {
  * @brief 结构体 - 消息
  */
 struct msg_msg {
-	struct list_head m_list;	/* 用于连接结构体的链表头指针 */
+	struct list_head m_list;	/* 用于连接结构体的链表指针 */
 	long  m_type;				/* 消息类别 */
 	int m_ts;					/* 消息文本大小 */
 	struct msg_msgseg* next;	/* 下一条消息 */
@@ -178,7 +178,7 @@ static void free_msg(struct msg_msg* msg)
 	struct msg_msgseg* seg;
 	seg = msg->next;
 	kfree(msg);
-	// 释放整个消息队列
+	// 释放整个消息页队列
 	while (seg != NULL) {
 		struct msg_msgseg* tmp = seg->next;
 		kfree(seg);
@@ -392,7 +392,7 @@ static void freeque(int id)
  * @param key 消息队列标识符
  * @param msgflg 消息队列操作标识符
  *					IPC_CREAT：创建新的消息队列
- *					IPC_EXCL：与IPC_CREAT一同使用，表示如果要创建的消息队列已经存在，则返回错误、
+ *					IPC_EXCL：与IPC_CREAT一同使用，表示如果要创建的消息队列已经存在，则返回错误
  *					IPC_NOWAIT：读写消息队列要求无法满足时，不阻塞
  * 
  * @return 
@@ -1068,12 +1068,12 @@ out_success:
 		if (t == NULL)
 			msqid = -1;
 		msg = (struct msg_msg*)msr_d.r_msg;
-		// 在锁住队列之前,还有可能接收到其他进程pipelined_send发来的报文
+		// 在锁住队列之前,还有可能接收到其他进程pipelined_send发来的消息
 		if (!IS_ERR(msg)) {
 			/* our message arived while we waited for
 			 * the spinlock. Process it.
 			 */
-			 // 所以还需要检查下是否成功接收到报文
+			// 所以还需要检查下是否成功接收到消息
 			if (msqid != -1)
 				msg_unlock(msqid);
 			goto out_success;
@@ -1086,7 +1086,7 @@ out_success:
 			if (signal_pending(current))
 				err = -EINTR;
 			else
-				goto retry; // 如果没有信号处理，则跳转到retry重新开始
+				goto retry; // 如果没有信号处理，则跳转到retry重试
 		}
 	}
 out_unlock:
@@ -1106,7 +1106,7 @@ out_unlock:
  * 
  * @return 
  *		返回值为可读取到的字节数
-*/
+ */
 #ifdef CONFIG_PROC_FS
 static int sysvipc_msg_read_proc(char* buffer, char** start, off_t offset, int length, int* eof, void* data)
 {

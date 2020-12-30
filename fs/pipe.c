@@ -337,12 +337,12 @@ static int
 pipe_release(struct inode* inode, int decr, int decw)
 {
 	down(PIPE_SEM(*inode));
-	PIPE_READERS(*inode) -= decr;
-	PIPE_WRITERS(*inode) -= decw;
-	if (!PIPE_READERS(*inode) && !PIPE_WRITERS(*inode)) {
+	PIPE_READERS(*inode) -= decr;//共享计数
+	PIPE_WRITERS(*inode) -= decw;//共享计数
+	if (!PIPE_READERS(*inode) && !PIPE_WRITERS(*inode)) {//如果读端和写端的相关fd都关闭了
 		struct pipe_inode_info* info = inode->i_pipe;
 		inode->i_pipe = NULL;
-		free_page((unsigned long)info->base);
+		free_page((unsigned long)info->base);//将页面释放
 		kfree(info);
 	}
 	else {
@@ -356,7 +356,7 @@ pipe_release(struct inode* inode, int decr, int decw)
 static int
 pipe_read_release(struct inode* inode, struct file* filp)
 {
-	return pipe_release(inode, 1, 0);
+	return pipe_release(inode, 1, 0);//1表示读的相关描述符减1,因为关闭,写端设置为0
 }
 
 static int

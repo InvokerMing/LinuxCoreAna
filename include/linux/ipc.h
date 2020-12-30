@@ -1,4 +1,4 @@
-#ifndef _LINUX_IPC_H
+ï»¿#ifndef _LINUX_IPC_H
 #define _LINUX_IPC_H
 
 #include <linux/types.h>
@@ -6,9 +6,9 @@
 #define IPC_PRIVATE ((__kernel_key_t) 0)  
 
 /**
- * @brief ½á¹¹Ìå - IPCÈ¨ÏŞ
- * Ô­×÷Õß×¢£ºObsolete, used only for backwards compatibility and libc5 compiles
- * ·­Òë£º×÷·Ï£¬½öÓÃÓÚÏòºó¼æÈİºÍlibc5±àÒë
+ * @brief ç»“æ„ä½“ - IPCæƒé™
+ * åŸä½œè€…æ³¨ï¼šObsolete, used only for backwards compatibility and libc5 compiles
+ * ç¿»è¯‘ï¼šä½œåºŸï¼Œä»…ç”¨äºå‘åå…¼å®¹å’Œlibc5ç¼–è¯‘
  */
 struct ipc_perm
 {
@@ -24,10 +24,10 @@ struct ipc_perm
 /* Include the definition of ipc64_perm */
 #include <asm/ipcbuf.h>
 
-/* ×ÊÔ´»ñÈ¡ÇëÇó±êÊ¶·û */
-#define IPC_CREAT  00001000   /* ÈôÖ¸¶¨ÏûÏ¢¶ÓÁĞ²»´æÔÚ£¬´´½¨ĞÂµÄÏûÏ¢¶ÓÁĞ */
-#define IPC_EXCL   00002000   /* ÈôÖ¸¶¨ÏûÏ¢¶ÓÁĞÒÑ¾­´æÔÚ£¬·µ»Ø´íÎó£¬ÓëIPC_CREATÒ»Í¬Ê¹ÓÃ */
-#define IPC_NOWAIT 00004000   /* ÈôÏµÍ³µÈ´ı£¬·µ»Ø´íÎó */
+/* èµ„æºè·å–è¯·æ±‚æ ‡è¯†ç¬¦ */
+#define IPC_CREAT  00001000   /* è‹¥æŒ‡å®šæ¶ˆæ¯é˜Ÿåˆ—ä¸å­˜åœ¨ï¼Œåˆ›å»ºæ–°çš„æ¶ˆæ¯é˜Ÿåˆ— */
+#define IPC_EXCL   00002000   /* è‹¥æŒ‡å®šæ¶ˆæ¯é˜Ÿåˆ—å·²ç»å­˜åœ¨ï¼Œè¿”å›é”™è¯¯ï¼Œä¸IPC_CREATä¸€åŒä½¿ç”¨ */
+#define IPC_NOWAIT 00004000   /* è‹¥ç³»ç»Ÿç­‰å¾…ï¼Œè¿”å›é”™è¯¯ */
 
 /* these fields are used by the DIPC package so the kernel as standard
    should avoid using them if possible */
@@ -39,10 +39,10 @@ struct ipc_perm
  * Control commands used with semctl, msgctl and shmctl 
  * see also specific commands in sem.h, msg.h and shm.h
  */
-#define IPC_RMID 0     /* É¾³ı×ÊÔ´ */
-#define IPC_SET  1     /* ÖÃIPCÈ¨ÏŞÑ¡Ïî */
-#define IPC_STAT 2     /* »ñÈ¡IPCÈ¨ÏŞÑ¡Ïî */
-#define IPC_INFO 3     /* ²é¿´IPCĞÅÏ¢ */
+#define IPC_RMID 0     /* åˆ é™¤èµ„æº */
+#define IPC_SET  1     /* ç½®IPCæƒé™é€‰é¡¹ */
+#define IPC_STAT 2     /* è·å–IPCæƒé™é€‰é¡¹ */
+#define IPC_INFO 3     /* æŸ¥çœ‹IPCä¿¡æ¯ */
 
 /*
  * Version flags for semctl, msgctl, and shmctl commands
@@ -57,16 +57,15 @@ struct ipc_perm
 
 #define IPCMNI 32768  /* <= MAX_INT limit for ipc arrays (including sysctl changes) */
 
-/* used by in-kernel data structures */
 struct kern_ipc_perm
 {
-	key_t		key;	/* ¼üÖµ/Î¨Ò»±êÊ¶·û */
-	uid_t		uid;	
-	gid_t		gid;
-	uid_t		cuid;
-	gid_t		cgid;
-	mode_t		mode; 
-	unsigned long	seq;
+	key_t		key;		/* é”®å€¼/å”¯ä¸€æ ‡è¯†ç¬¦ */
+	uid_t		uid;		/* æ‰€æœ‰è€…ç”¨æˆ·id */
+	gid_t		gid;		/* æ‰€æœ‰è€…ç”¨æˆ·ç»„ID */
+	uid_t		cuid;		/* åˆ›å»ºè€…ç”¨æˆ·id */
+	gid_t		cgid;		/* åˆ›å»ºè€…ç”¨æˆ·id */
+	mode_t		mode;		/* æ¨¡å¼ */
+	unsigned long	seq;	/* å®ä½“ID */
 };
 
 #endif /* __KERNEL__ */

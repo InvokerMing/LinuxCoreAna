@@ -787,7 +787,7 @@ out_unlock:
  * @param semid 信号量标识符
  * @param semnum 信号量数
  * @param cmd 操作命令
- *		IPC_STAT：读取一个信号量集的数据结构semid_ds，并将其存储在semun中的buf参数中。    ·
+ *		IPC_STAT：读取一个信号量集的数据结构semid_ds，并将其存储在semun中的buf参数中。
  *		IPC_SET：设置信号量集的数据结构semid_ds中的元素ipc_perm，其值取自semun中的buf参数。    
  *		IPC_RMID：将信号量集从内存中删除。    
  *		GETALL：用于读取信号量集中的所有信号量的值。    
@@ -797,7 +797,7 @@ out_unlock:
  *		GETZCNT：返回这在等待完全空闲的资源的进程数目。
  *		SETALL：设置信号量集中的所有的信号量的值。   
  *		SETVAL：设置信号量集中的一个单独的信号量的值。
- * @param arg 向内核中semun的指针
+ * @param arg semun指针
  * 
  * @return 成功返回相关数据
  *         失败返回错误代码
